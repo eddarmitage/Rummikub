@@ -18,8 +18,7 @@ CREATE TABLE rounds (
   id TEXT PRIMARY KEY,           -- nanoid
   game_id TEXT NOT NULL REFERENCES games(id),
   round_number INTEGER NOT NULL,
-  created_at INTEGER NOT NULL,
-  submitted_by TEXT REFERENCES users(id)  -- nullable
+  created_at INTEGER NOT NULL
 );
 
 CREATE TABLE scores (
