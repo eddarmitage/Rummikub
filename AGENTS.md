@@ -71,6 +71,12 @@ Routing note: v1 has effectively one real route (`/g/:id`, the scorecard), so `s
 does hand-rolled path matching rather than pulling in React Router. Revisit if the route count
 grows.
 
+## Documentation conventions
+
+- **Keep markdown tables column-aligned.** Pad every cell so the `|` separators line up per
+  column — tables should read cleanly in a plain-text diff, not just rendered HTML. When you
+  edit any row in a table, re-pad the whole table, not just that row.
+
 ## Testing conventions
 
 - **Integration tests** run against the real `workerd` runtime via `vitest-pool-workers` and hit a
