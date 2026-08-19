@@ -28,3 +28,6 @@ npm-debug.log*
 .DS_Store
 .vscode/
 .idea/
+
+# Ensure migrations are tracked despite global *.sql ignore rules
+!migrations/*.sql
