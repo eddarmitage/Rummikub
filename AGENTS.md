@@ -56,13 +56,13 @@ React Testing Library + Playwright (tests).
 
 ## Commands
 
-| Command | Does |
-|---|---|
-| `npm run dev` | Builds the frontend, then runs `wrangler dev` (local Miniflare-backed dev server on `http://localhost:8787`) alongside a Vite watcher that rebuilds `dist/client` on frontend changes |
-| `npm run build` | Builds the React frontend into `dist/client` via Vite |
-| `npm run deploy` | Builds the frontend, then `wrangler deploy` |
-| `npm run typecheck` | Type-checks the frontend (`tsconfig.json`) and worker (`tsconfig.worker.json`) separately — they have different global types (DOM vs Workers) |
-| `npm run cf-typegen` | Regenerates `worker-configuration.d.ts` from `wrangler.toml`; rerun after changing bindings |
+| Command              | Does                                                                                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`        | Builds the frontend, then runs `wrangler dev` (local Miniflare-backed dev server on `http://localhost:8787`) alongside a Vite watcher that rebuilds `dist/client` on frontend changes |
+| `npm run build`      | Builds the React frontend into `dist/client` via Vite                                                                                                                                 |
+| `npm run deploy`     | Builds the frontend, then `wrangler deploy`                                                                                                                                           |
+| `npm run typecheck`  | Type-checks the frontend (`tsconfig.json`) and worker (`tsconfig.worker.json`) separately — they have different global types (DOM vs Workers)                                         |
+| `npm run cf-typegen` | Regenerates `worker-configuration.d.ts` from `wrangler.toml`; rerun after changing bindings                                                                                           |
 
 Test commands (`test`, `test:e2e`) aren't wired up yet — see issue "Set up test suites and seed
 script".
