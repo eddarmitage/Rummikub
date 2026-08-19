@@ -72,8 +72,7 @@ CREATE TABLE rounds (
   id TEXT PRIMARY KEY,           -- nanoid
   game_id TEXT NOT NULL REFERENCES games(id),
   round_number INTEGER NOT NULL,
-  created_at INTEGER NOT NULL,
-  submitted_by TEXT REFERENCES users(id)  -- nullable
+  created_at INTEGER NOT NULL
 );
 
 CREATE TABLE scores (
@@ -108,6 +107,8 @@ CREATE INDEX idx_scores_round ON scores(round_id);
 A player's running total = sum of `tiles_left_value` across their rounds in a game, computed on read.
 
 **Open design question, not yet settled**: how league tables should group games — automatically (any games a user played in) vs an explicit "league" entity (a named group of users/games set up deliberately). Decide before building that feature; doesn't block v1.
+
+**Open design question, not yet settled**: whether `rounds` needs a `submitted_by` (attribution for who recorded the round) depends on the scoring flow — a single person entering everyone's tile counts vs. each player submitting their own. Decide when designing that flow (#4); add the column back via migration then if needed.
 
 ## API routes (v1)
 
