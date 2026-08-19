@@ -32,20 +32,20 @@ Browser
 
 ## Tech stack
 
-| Layer | Choice |
-|---|---|
-| Language | TypeScript, full stack |
-| API framework | Hono |
-| DB access | Drizzle ORM (D1-aware batch support, typed queries) or raw SQL for simple queries |
-| Validation | Zod |
-| Frontend | React + Vite (Cloudflare Vite plugin for native Workers integration) |
-| Styling | Plain CSS (no Tailwind — small app, not worth the abstraction layer while learning frontend) |
-| Routing (frontend) | React Router, or hand-rolled given the small number of routes |
+| Layer                  | Choice                                                                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Language               | TypeScript, full stack                                                                                          |
+| API framework          | Hono                                                                                                            |
+| DB access              | Drizzle ORM (D1-aware batch support, typed queries) or raw SQL for simple queries                               |
+| Validation             | Zod                                                                                                             |
+| Frontend               | React + Vite (Cloudflare Vite plugin for native Workers integration)                                            |
+| Styling                | Plain CSS (no Tailwind — small app, not worth the abstraction layer while learning frontend)                    |
+| Routing (frontend)     | React Router, or hand-rolled given the small number of routes                                                   |
 | Unit/integration tests | Vitest + `@cloudflare/vitest-pool-workers` (runs against real workerd runtime, tests D1-backed routes directly) |
-| Component tests | Vitest + React Testing Library |
-| E2E tests | Playwright |
-| Local dev | `wrangler dev` (Miniflare-backed, no live Cloudflare account needed) |
-| CI/CD | GitHub Actions + `wrangler-action`, deploy on push to `main` |
+| Component tests        | Vitest + React Testing Library                                                                                  |
+| E2E tests              | Playwright                                                                                                      |
+| Local dev              | `wrangler dev` (Miniflare-backed, no live Cloudflare account needed)                                            |
+| CI/CD                  | GitHub Actions + `wrangler-action`, deploy on push to `main`                                                    |
 
 Scaffold from Cloudflare's own template as a starting point rather than hand-assembling: `npm create hono@latest` or the `create-cloudflare` CLI with the Hono + React option (see `cloudflare/react-router-hono-fullstack-template` on GitHub for a close reference).
 
@@ -111,13 +111,13 @@ A player's running total = sum of `tiles_left_value` across their rounds in a ga
 
 ## API routes (v1)
 
-| Route | Auth |
-|---|---|
-| `GET /games/:id` | Public |
-| `POST /games` | Requires Access (write-gated from the start) |
-| `POST /games/:id/players` | Requires Access |
-| `POST /games/:id/rounds` | Requires Access |
-| `PATCH /games/:id/rounds/:roundId` | Requires Access |
+| Route                              | Auth                                         |
+| ---------------------------------- | -------------------------------------------- |
+| `GET /games/:id`                   | Public                                       |
+| `POST /games`                      | Requires Access (write-gated from the start) |
+| `POST /games/:id/players`          | Requires Access                              |
+| `POST /games/:id/rounds`           | Requires Access                              |
+| `PATCH /games/:id/rounds/:roundId` | Requires Access                              |
 
 Error response shape, consistent across all routes:
 ```json
