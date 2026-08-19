@@ -30,9 +30,20 @@ See [`docs/spec.md`](docs/spec.md) for the full architecture, data model, and AP
 
 ## Local development
 
-The project isn't scaffolded yet — see the open issues in this repo for the setup roadmap, starting
-with "Scaffold Cloudflare Worker + Hono + React project". Once scaffolded, local dev runs via
-`wrangler dev` (Miniflare-backed, no live Cloudflare account needed).
+```
+npm install
+npm run dev
+```
+
+This builds the React frontend and starts `wrangler dev` (Miniflare-backed, no live Cloudflare
+account needed) on `http://localhost:8787`, alongside a Vite watcher that rebuilds the frontend on
+change. Other commands:
+
+| Command | Does |
+|---|---|
+| `npm run build` | Builds the frontend into `dist/client` |
+| `npm run deploy` | Builds and deploys the Worker via `wrangler deploy` |
+| `npm run typecheck` | Type-checks the frontend and worker |
 
 ## Deployment
 
