@@ -3,43 +3,12 @@ name: Deploy
 on:
   push:
     branches: [main]
-  pull_request:
 
-# No staging environment (see README "Deployment") — this pipeline is the
-# safety net. `test` runs on PRs too (so branch protection can actually
-# require it before merge, and failures surface before touching D1), while
-# `deploy` only runs after a push lands on main.
+# No staging environment (see README "Deployment") — branch protection
+# requiring the CI workflow (ci.yml) to pass is the safety net, so this
+# trusts that whatever lands on main already passed type-check/tests/e2e.
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: npm
-
-      - run: npm ci
-
-      - name: Type-check
-        run: npm run typecheck
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Run tests
-        run: npm test
-
-      - name: Run e2e tests
-        run: npm run test:e2e
-
-      - name: Build
-        run: npm run build
-
   deploy:
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
