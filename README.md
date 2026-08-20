@@ -72,22 +72,40 @@ config (and its migrations) to already exist locally.
 
 ## Auth setup
 
-Write routes are gated behind **Cloudflare Access for Workers** (native integration — the
-Access policy is attached directly to the deployed Worker; Cloudflare enforces
-authentication at the edge before the Worker's code runs). See `docs/spec.md` "Auth" for
-the full model.
+Write routes are gated behind **Cloudflare Access**, scoped per-path rather than to the
+whole Worker. See `docs/spec.md` "Auth" for the full model.
 
-**One-time manual step (you own this, not this repo):** after deploying, attach an Access
-policy to the Worker in the Cloudflare dashboard, and add your own email (or whichever
-identities you want allowed) to its allowed list. This repo intentionally never commits
+**Do not use the "Protect this Worker behind Access" one-click toggle** (Workers & Pages →
+your Worker → Access tab) — it gates every route on the Worker, including the public
+`GET /games/:id` scorecard view, which breaks "anyone with the link can view." Cloudflare
+Access has no HTTP-method awareness and a bare path matches everything nested under it, so
+there's no way to protect only `POST` while leaving the same-shaped `GET` public — this is
+also why game creation lives at `POST /games/new` rather than `POST /games` (see
+`src/worker/routes/games.ts`).
+
+**One-time manual step (you own this, not this repo):** after deploying, in the Zero Trust
+dashboard go to **Access controls → Applications → Create new application → Self-hosted and
+private**, and add one **public hostname** destination per write route (up to 5 per
+application, so one application covers all of these):
+
+| Domain | Path |
+| --- | --- |
+| `<your-worker>.<account>.workers.dev` | `games/new` |
+| `<your-worker>.<account>.workers.dev` | `games/*/players` |
+| `<your-worker>.<account>.workers.dev` | `games/*/rounds*` |
+| `<your-worker>.<account>.workers.dev` | `auth/login` |
+
+Note the **Subdomain** field (separate from Domain) needs your Worker's own subdomain
+(`<your-worker>`) — leaving it blank scopes the app to the bare account domain, which won't
+match your Worker's traffic at all. Don't add a leading `/` inside the Path field; the UI
+already prefixes one.
+
+Add an **Access policy** (Allow, Include → Emails → your own email, or whichever identities
+you want allowed) and attach it to the application. This repo intentionally never commits
 that allow-list — only you know which email(s) should be let in, and an Access policy is a
-real account/security setting, not something that belongs in a public repo.
-`wrangler.toml.example` has no placeholder for it because, per Cloudflare's native Workers
-Access integration, attaching the policy doesn't require a `wrangler.toml` entry — this is
-a new feature, so double-check that's still true when you do this step. If it turns out a
-binding is required, add a parameterized placeholder to `wrangler.toml.example` the same
-way `D1_DATABASE_ID` is handled (see `scripts/bootstrap.sh`), rather than committing the
-real value.
+real account/security setting, not something that belongs in a public repo. No
+`wrangler.toml` entry is needed for any of this — it's configured entirely in the Zero Trust
+dashboard, independent of the Worker's own config.
 
 **Local development / testing bypass:** there's no live Access session under `wrangler dev`
 or the test suites, so `ctx.access` is always unset locally. `src/worker/middleware/auth.ts`
