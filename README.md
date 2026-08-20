@@ -90,10 +90,18 @@ application, so one application covers all of these):
 
 | Domain | Path |
 | --- | --- |
-| `<your-worker>.<account>.workers.dev` | `games/new` |
-| `<your-worker>.<account>.workers.dev` | `games/*/players` |
-| `<your-worker>.<account>.workers.dev` | `games/*/rounds*` |
-| `<your-worker>.<account>.workers.dev` | `auth/login` |
+| `<your-worker>.<account>.workers.dev` | `api/games/new` |
+| `<your-worker>.<account>.workers.dev` | `api/games/*/players` |
+| `<your-worker>.<account>.workers.dev` | `api/games/*/rounds*` |
+| `<your-worker>.<account>.workers.dev` | `api/auth/login` |
+
+Note the **`api/` prefix**: the Hono app itself is mounted at `/api` (`src/worker/index.ts`),
+and `wrangler.toml`'s `run_worker_first = ["/api/*"]` means the Worker (and therefore
+`ctx.access`) never even runs for a bare `/games/*` path — only `/api/games/*` reaches it. An
+Access application scoped to the bare paths silently never gates these routes at all, so the
+Worker's own `requireAuth()` falls through to a plain `401 UNAUTHENTICATED` JSON response
+instead of Access ever stepping in — including for `auth/login`, where that means the browser
+renders the raw error JSON instead of following Access's hosted-login redirect.
 
 Note the **Subdomain** field (separate from Domain) needs your Worker's own subdomain
 (`<your-worker>`) — leaving it blank scopes the app to the bare account domain, which won't
