@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { addRound, createDb, getGame, getRound, listPlayers, updateRoundScores, type Db } from "../db/queries";
+import { addRound, createDb, ensureGameMember, getGame, getRound, listPlayers, updateRoundScores, type Db } from "../db/queries";
 import { errorResponse, parseBody } from "../lib/http";
 import { requireAuth, type AuthVariables } from "../middleware/auth";
 import { roundScoresSchema } from "./schemas";
@@ -38,6 +38,7 @@ rounds.post("/", requireAuth(), async (c) => {
   }
 
   const round = await addRound(db, gameId, body.data.scores);
+  await ensureGameMember(db, { gameId, userId: c.get("user").id, role: "editor" });
   return c.json({ round }, 201);
 });
 
@@ -67,5 +68,6 @@ rounds.patch("/:roundId", requireAuth(), async (c) => {
   }
 
   const scores = await updateRoundScores(db, roundId, body.data.scores);
+  await ensureGameMember(db, { gameId, userId: c.get("user").id, role: "editor" });
   return c.json({ scores });
 });

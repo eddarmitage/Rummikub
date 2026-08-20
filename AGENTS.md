@@ -91,3 +91,7 @@ grows.
 - **League table grouping** (implicit — any games a user played in — vs an explicit "league"
   entity grouping users/games) is unresolved. It's out of scope for v1; don't invent an answer if
   asked to build league tables — check with the user first.
+- **`game_members` owner/editor permission split** (#12 added the table and automatic membership
+  bookkeeping; nothing reads `role` yet). What an `editor` can't do that an `owner` can — e.g.
+  remove players, mark a game complete, remove other members — is undecided. Don't invent
+  enforcement logic if asked to gate a route by role; check with the user first.

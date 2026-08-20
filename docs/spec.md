@@ -8,7 +8,7 @@ A web app to track Rummikub game scores, hosted entirely on Cloudflare's develop
 - Anyone with the link can view the scorecard — running totals per player, one row per round
 - Players enter the number of points left on their rack at the end of each round; the app tallies totals
 - Once auth exists, submitting/editing scores and creating games requires being logged in
-- Later: per-game membership and roles, league tables aggregating a player's results across games
+- Per-game membership (`game_members`) is tracked automatically; role-based permissions aren't enforced yet. Later: league tables aggregating a player's results across games
 
 ## Architecture
 
@@ -91,17 +91,17 @@ CREATE TABLE users (
   created_at INTEGER NOT NULL
 );
 
--- Deferred — add when per-game roles/membership are needed (not v1)
--- CREATE TABLE game_members (
---   game_id TEXT NOT NULL REFERENCES games(id),
---   user_id TEXT NOT NULL REFERENCES users(id),
---   role TEXT NOT NULL DEFAULT 'editor',  -- 'owner' | 'editor'
---   PRIMARY KEY (game_id, user_id)
--- );
+CREATE TABLE game_members (
+  game_id TEXT NOT NULL REFERENCES games(id),
+  user_id TEXT NOT NULL REFERENCES users(id),
+  role TEXT NOT NULL DEFAULT 'editor',  -- 'owner' | 'editor'
+  PRIMARY KEY (game_id, user_id)
+);
 
 CREATE INDEX idx_players_game ON players(game_id);
 CREATE INDEX idx_rounds_game ON rounds(game_id);
 CREATE INDEX idx_scores_round ON scores(round_id);
+CREATE INDEX idx_game_members_user ON game_members(user_id);
 ```
 
 A player's running total = sum of `tiles_left_value` across their rounds in a game, computed on read.
@@ -129,10 +129,10 @@ Error response shape, consistent across all routes:
 
 **Cloudflare Access for Workers** (native integration, shipped Aug 14 2026) — attach an Access policy directly to the Worker; Cloudflare enforces authentication at the edge before the Worker's code runs. Inside the Worker, `ctx.access.getIdentity()` returns the authenticated user's email/name — no manual JWT verification needed.
 
-- v1: any authenticated (Access-allowed) user can write to any game — the shareable link plus login is the access model, no per-game membership yet
+- `game_members` (game_id, user_id, role) is populated automatically: the creator becomes `owner` on `POST /games`; any other Access-allowed user becomes `editor` on their first successful write to a game (mirroring how `users` itself is lazily upserted). **Not yet enforced** — v1 behavior is unchanged: any Access-allowed user can still write to any game, and `role` isn't read anywhere yet.
 - Access controls *who can log in* (an allow-list of emails/domains, manageable via Cloudflare's API — can be wrapped in an "invite" admin flow in-app)
 - Your own `users` table in D1 controls *app-level identity* — upserted from Access identity on first authenticated write, or pre-created by an admin to link a player before that person has logged in
-- End state: `game_members` (game_id, user_id, role) for per-game permissions once that's needed; Access remains the front door throughout — it authenticates, your D1 schema authorizes
+- End state (not yet implemented): route handlers check `role` to gate specific actions per game — e.g. only an `owner` can remove members or mark a game complete. What exactly an `editor` can't do that an `owner` can is undecided (see AGENTS.md "Open design questions"). Access remains the front door throughout — it authenticates, your D1 schema will authorize once that ships.
 
 ## Suggested project structure
 

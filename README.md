@@ -8,7 +8,7 @@ A web app to track Rummikub game scores, hosted entirely on Cloudflare's develop
 - Anyone with the link can view the scorecard — running totals per player, one row per round
 - Players enter the number of points left on their rack at the end of each round; the app tallies totals
 - Submitting/editing scores and creating games requires being logged in (Cloudflare Access)
-- Later: per-game membership and roles, league tables aggregating a player's results across games
+- Per-game membership (`game_members`) is tracked automatically; role-based permissions aren't enforced yet. Later: league tables aggregating a player's results across games
 
 See [`docs/spec.md`](docs/spec.md) for the full architecture, data model, and API design, and
 [`docs/mockups/`](docs/mockups/) for UI reference screenshots.
