@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-// Mirrors migrations/0001_init.sql field-for-field. Keep in sync by hand — the SQL
+// Mirrors migrations/0001_init.sql and 0002_add_game_members.sql field-for-field. Keep in sync by hand — the SQL
 // migration is the source of truth; this file is a typed reflection of it, not the
 // other way around (see drizzle.config.ts for why drizzle-kit doesn't generate
 // migrations in this project).
@@ -69,10 +69,34 @@ export const users = sqliteTable("users", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+// Populated automatically (issue #12): the creator becomes 'owner' on game creation; any other
+// authenticated user becomes 'editor' on their first successful write to the game, mirroring how
+// `users` itself is lazily upserted (see src/worker/db/queries.ts's `ensureGameMember`). `role` is
+// recorded but not yet enforced anywhere — see AGENTS.md "Open design questions".
+export const gameMembers = sqliteTable(
+  "game_members",
+  {
+    gameId: text("game_id")
+      .notNull()
+      .references(() => games.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    role: text("role", { enum: ["owner", "editor"] })
+      .notNull()
+      .default("editor"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.gameId, table.userId] }),
+    index("idx_game_members_user").on(table.userId),
+  ],
+);
+
 export const gamesRelations = relations(games, ({ many, one }) => ({
   players: many(players),
   rounds: many(rounds),
   createdByUser: one(users, { fields: [games.createdBy], references: [users.id] }),
+  members: many(gameMembers),
 }));
 
 export const playersRelations = relations(players, ({ one, many }) => ({
@@ -94,6 +118,12 @@ export const scoresRelations = relations(scores, ({ one }) => ({
 export const usersRelations = relations(users, ({ many }) => ({
   games: many(games),
   players: many(players),
+  gameMemberships: many(gameMembers), // name distinct from `games` above (that's createdBy)
+}));
+
+export const gameMembersRelations = relations(gameMembers, ({ one }) => ({
+  game: one(games, { fields: [gameMembers.gameId], references: [games.id] }),
+  user: one(users, { fields: [gameMembers.userId], references: [users.id] }),
 }));
 
 export type Game = typeof games.$inferSelect;
@@ -106,3 +136,5 @@ export type Score = typeof scores.$inferSelect;
 export type NewScore = typeof scores.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type GameMember = typeof gameMembers.$inferSelect;
+export type NewGameMember = typeof gameMembers.$inferInsert;

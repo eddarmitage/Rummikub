@@ -2,8 +2,8 @@ import { asc, eq, sql } from "drizzle-orm";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import { nanoid } from "nanoid";
 import * as schema from "./schema";
-import { games, players, rounds, scores, users } from "./schema";
-import type { Game, NewGame, Player, Round, Score, User, NewUser } from "./schema";
+import { games, players, rounds, scores, users, gameMembers } from "./schema";
+import type { Game, NewGame, Player, Round, Score, User, NewUser, GameMember, NewGameMember } from "./schema";
 
 const GAME_ID_LENGTH = 8;
 
@@ -237,4 +237,37 @@ export async function getOrCreateUserByEmail(db: Db, input: UpsertUserInput): Pr
     })
     .returning();
   return user;
+}
+
+// ---------------------------------------------------------------------------
+// Game members — per-game roles (docs/spec.md "Auth", issue #12). This is
+// bookkeeping only: it records who's a member of a game and what role they
+// have, but nothing in the route layer checks `role` yet — v1 write-route
+// behavior is unchanged (any Access-allowed user may still write to any
+// game). Wiring this into actual authorization is a follow-on ticket once
+// the owner/editor permission split is decided (AGENTS.md "Open design
+// questions").
+// ---------------------------------------------------------------------------
+
+export interface EnsureGameMemberInput {
+  gameId: string;
+  userId: string;
+  role: "owner" | "editor";
+}
+
+/** Idempotently records a user's membership/role in a game. Insert-if-absent — an existing
+ *  membership row (e.g. the owner) is never changed by a later call with a different role. */
+export async function ensureGameMember(db: Db, input: EnsureGameMemberInput): Promise<void> {
+  await db
+    .insert(gameMembers)
+    .values({
+      gameId: input.gameId,
+      userId: input.userId,
+      role: input.role,
+    } satisfies NewGameMember)
+    .onConflictDoNothing();
+}
+
+export async function listGameMembers(db: Db, gameId: string): Promise<GameMember[]> {
+  return db.query.gameMembers.findMany({ where: eq(gameMembers.gameId, gameId) });
 }

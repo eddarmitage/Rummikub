@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { addPlayer, createDb, createGame, getGame, getGameDetail } from "../db/queries";
+import { addPlayer, createDb, createGame, ensureGameMember, getGame, getGameDetail } from "../db/queries";
 import { errorResponse, parseBody } from "../lib/http";
 import { requireAuth, type AuthVariables } from "../middleware/auth";
 import { rounds } from "./rounds";
@@ -24,6 +24,7 @@ games.post("/", requireAuth(), async (c) => {
 
   const db = createDb(c.env.DB);
   const game = await createGame(db, { name: body.data.name, createdBy: c.get("user").id });
+  await ensureGameMember(db, { gameId: game.id, userId: c.get("user").id, role: "owner" });
   return c.json({ game }, 201);
 });
 
@@ -41,6 +42,7 @@ games.post("/:id/players", requireAuth(), async (c) => {
   if (!body.ok) return body.response;
 
   const player = await addPlayer(db, { gameId, name: body.data.name, sortOrder: body.data.sortOrder });
+  await ensureGameMember(db, { gameId, userId: c.get("user").id, role: "editor" });
   return c.json({ player }, 201);
 });
 
