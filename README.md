@@ -90,10 +90,17 @@ application, so one application covers all of these):
 
 | Domain | Path |
 | --- | --- |
-| `<your-worker>.<account>.workers.dev` | `games/new` |
-| `<your-worker>.<account>.workers.dev` | `games/*/players` |
-| `<your-worker>.<account>.workers.dev` | `games/*/rounds*` |
-| `<your-worker>.<account>.workers.dev` | `auth/login` |
+| `<your-worker>.<account>.workers.dev` | `api/games/new` |
+| `<your-worker>.<account>.workers.dev` | `api/games/*/players` |
+| `<your-worker>.<account>.workers.dev` | `api/games/*/rounds*` |
+| `<your-worker>.<account>.workers.dev` | `api/auth/login` |
+
+Note the **`api/` prefix**: the Hono app itself is mounted at `/api` (`src/worker/index.ts`),
+and `wrangler.toml`'s `run_worker_first = ["/api/*"]` means only `/api/*` even reaches the
+Worker — an Access application scoped to the bare paths (no `api/` prefix) never gates these
+routes at all, so `requireAuth()` falls through to a plain `401 UNAUTHENTICATED` JSON response
+instead of Access ever stepping in — including for `auth/login`, where that means the browser
+renders the raw error JSON instead of following Access's hosted-login redirect.
 
 Note the **Subdomain** field (separate from Domain) needs your Worker's own subdomain
 (`<your-worker>`) — leaving it blank scopes the app to the bare account domain, which won't
@@ -103,16 +110,41 @@ already prefixes one.
 Add an **Access policy** (Allow, Include → Emails → your own email, or whichever identities
 you want allowed) and attach it to the application. This repo intentionally never commits
 that allow-list — only you know which email(s) should be let in, and an Access policy is a
-real account/security setting, not something that belongs in a public repo. No
-`wrangler.toml` entry is needed for any of this — it's configured entirely in the Zero Trust
-dashboard, independent of the Worker's own config.
+real account/security setting, not something that belongs in a public repo.
 
-**Local development / testing bypass:** there's no live Access session under `wrangler dev`
-or the test suites, so `ctx.access` is always unset locally. `src/worker/middleware/auth.ts`
-accepts an `X-Dev-User-Email` header as a stand-in identity, but only when
-`DEV_AUTH_BYPASS_ENABLED=true` is set — which is never true in the real deployment, since
-`wrangler.toml.example` doesn't define it. To use it locally, add a line to your gitignored
-`.dev.vars` file (create it if it doesn't exist):
+**Verifying identity in the Worker:** a *self-hosted* Access Application (the setup above)
+doesn't populate the Workers-native `ctx.access` binding — that binding only exists when you
+use the "Protect this Worker" toggle this README tells you not to use. Instead,
+`src/worker/middleware/auth.ts` verifies the `Cf-Access-Jwt-Assertion` header Access signs
+onto every request that passes through the application (Cloudflare's [documented approach for
+this](https://developers.cloudflare.com/cloudflare-one/identity/authorization-cookie/validating-json/)),
+which needs two values on your own `wrangler.toml` (see `wrangler.toml.example` — not secrets,
+but still account-specific config, so this repo only ever commits `${...}` placeholders for
+them, never real values):
+
+- `ACCESS_TEAM_DOMAIN` — your Zero Trust team domain, e.g.
+  `https://your-team.cloudflareaccess.com` (Zero Trust dashboard → Settings).
+- `ACCESS_AUD` — the self-hosted Access Application's **Application Audience (AUD) Tag**, shown
+  on its Overview tab once you've created it above.
+
+`./scripts/bootstrap.sh` will pass these through if you `export` them first; otherwise it
+leaves blank placeholders on the generated `wrangler.toml` for you to fill in by hand. Writes
+401 until both are set to real values.
+
+**The real deploy (`.github/workflows/deploy.yml`) needs these set separately** — it
+regenerates `wrangler.toml` from scratch on every push to `main` from GitHub Actions
+Variables, the same way it sources `D1_DATABASE_ID` from a Secret. Add both under this repo's
+**Settings → Secrets and variables → Actions → Variables** (not Secrets — see the workflow
+comment for why): `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD`, same values as above. Editing your own
+local `wrangler.toml` has no effect on the deployed site; only these repo Variables do. This is
+a one-time step — once set, every future deploy picks them up automatically.
+
+**Local development / testing bypass:** there's no live Access session (and therefore no
+`Cf-Access-Jwt-Assertion` header) under `wrangler dev` or the test suites.
+`src/worker/middleware/auth.ts` accepts an `X-Dev-User-Email` header as a stand-in identity,
+but only when `DEV_AUTH_BYPASS_ENABLED=true` is set — which is never true in the real
+deployment, since `wrangler.toml.example` doesn't define it. To use it locally, add a line to
+your gitignored `.dev.vars` file (create it if it doesn't exist):
 
 ```
 DEV_AUTH_BYPASS_ENABLED=true

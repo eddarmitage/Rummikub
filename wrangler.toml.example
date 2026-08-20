@@ -8,6 +8,17 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
 
+# Needed to verify the Cf-Access-Jwt-Assertion header Cloudflare Access signs onto requests
+# that pass through the self-hosted Access Application (README "Auth setup") — not secrets,
+# but still account-specific infra config, so they're placeholders here rather than real
+# values. Fill in your own gitignored wrangler.toml, never this file.
+[vars]
+# Zero Trust team domain, e.g. "https://your-team.cloudflareaccess.com".
+ACCESS_TEAM_DOMAIN = "${ACCESS_TEAM_DOMAIN}"
+# The self-hosted Access Application's "Application Audience (AUD) Tag", from its Overview
+# tab in the Zero Trust dashboard.
+ACCESS_AUD = "${ACCESS_AUD}"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "rummikub-scores-db"
