@@ -8,11 +8,15 @@ import type { ApiErrorBody, GameDetailResponse, GameResponse, PlayerResponse } f
 const worker = exports.default;
 
 const GAMES_URL = "https://example.com/api/games";
+// Deliberately distinct from GAMES_URL — POST /api/games/new isn't a prefix of GET
+// /api/games/:id, which is what lets Cloudflare Access path-scope the write route without
+// also catching the public read route. See src/worker/routes/games.ts.
+const CREATE_GAME_URL = "https://example.com/api/games/new";
 const AUTH_HEADERS = { "X-Dev-User-Email": "tester@example.com", "content-type": "application/json" };
 const JSON_HEADERS = { "content-type": "application/json" };
 
 async function createGame(name = "Friday night") {
-  const res = await worker.fetch(GAMES_URL, {
+  const res = await worker.fetch(CREATE_GAME_URL, {
     method: "POST",
     headers: AUTH_HEADERS,
     body: JSON.stringify({ name }),
@@ -47,9 +51,9 @@ describe("GET /api/games/:id", () => {
   });
 });
 
-describe("POST /api/games", () => {
+describe("POST /api/games/new", () => {
   it("401s with UNAUTHENTICATED when no auth is supplied", async () => {
-    const res = await worker.fetch(GAMES_URL, {
+    const res = await worker.fetch(CREATE_GAME_URL, {
       method: "POST",
       headers: JSON_HEADERS,
       body: JSON.stringify({ name: "No auth" }),
@@ -61,7 +65,7 @@ describe("POST /api/games", () => {
   });
 
   it("creates a game with status active when authenticated", async () => {
-    const res = await worker.fetch(GAMES_URL, {
+    const res = await worker.fetch(CREATE_GAME_URL, {
       method: "POST",
       headers: AUTH_HEADERS,
       body: JSON.stringify({ name: "Friday night" }),
@@ -75,7 +79,7 @@ describe("POST /api/games", () => {
   });
 
   it("creates a game with a null name when none is given", async () => {
-    const res = await worker.fetch(GAMES_URL, {
+    const res = await worker.fetch(CREATE_GAME_URL, {
       method: "POST",
       headers: AUTH_HEADERS,
       body: JSON.stringify({}),
@@ -87,7 +91,7 @@ describe("POST /api/games", () => {
   });
 
   it("400s with VALIDATION_ERROR for an invalid body", async () => {
-    const res = await worker.fetch(GAMES_URL, {
+    const res = await worker.fetch(CREATE_GAME_URL, {
       method: "POST",
       headers: AUTH_HEADERS,
       body: JSON.stringify({ name: "" }),

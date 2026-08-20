@@ -115,7 +115,7 @@ A player's running total = sum of `tiles_left_value` across their rounds in a ga
 | Route                              | Auth                                         |
 | ---------------------------------- | -------------------------------------------- |
 | `GET /games/:id`                   | Public                                       |
-| `POST /games`                      | Requires Access (write-gated from the start) |
+| `POST /games/new`                  | Requires Access (write-gated from the start) |
 | `POST /games/:id/players`          | Requires Access                              |
 | `POST /games/:id/rounds`           | Requires Access                              |
 | `PATCH /games/:id/rounds/:roundId` | Requires Access                              |

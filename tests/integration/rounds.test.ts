@@ -9,7 +9,7 @@ const AUTH_HEADERS = { "X-Dev-User-Email": "tester@example.com", "content-type":
 const JSON_HEADERS = { "content-type": "application/json" };
 
 async function createGameWithPlayers(playerNames: string[]) {
-  const gameRes = await worker.fetch(`${API}/games`, {
+  const gameRes = await worker.fetch(`${API}/games/new`, {
     method: "POST",
     headers: AUTH_HEADERS,
     body: JSON.stringify({ name: "Rounds test" }),
