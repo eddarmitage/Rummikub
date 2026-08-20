@@ -58,6 +58,39 @@ Other commands:
 | `npm run deploy`    | Builds and deploys the Worker via `wrangler deploy` |
 | `npm run typecheck` | Type-checks the frontend and worker                 |
 
+## Auth setup
+
+Write routes are gated behind **Cloudflare Access for Workers** (native integration — the
+Access policy is attached directly to the deployed Worker; Cloudflare enforces
+authentication at the edge before the Worker's code runs). See `docs/spec.md` "Auth" for
+the full model.
+
+**One-time manual step (you own this, not this repo):** after deploying, attach an Access
+policy to the Worker in the Cloudflare dashboard, and add your own email (or whichever
+identities you want allowed) to its allowed list. This repo intentionally never commits
+that allow-list — only you know which email(s) should be let in, and an Access policy is a
+real account/security setting, not something that belongs in a public repo.
+`wrangler.toml.example` has no placeholder for it because, per Cloudflare's native Workers
+Access integration, attaching the policy doesn't require a `wrangler.toml` entry — this is
+a new feature, so double-check that's still true when you do this step. If it turns out a
+binding is required, add a parameterized placeholder to `wrangler.toml.example` the same
+way `D1_DATABASE_ID` is handled (see `scripts/bootstrap.sh`), rather than committing the
+real value.
+
+**Local development / testing bypass:** there's no live Access session under `wrangler dev`
+or the test suites, so `ctx.access` is always unset locally. `src/worker/middleware/auth.ts`
+accepts an `X-Dev-User-Email` header as a stand-in identity, but only when
+`DEV_AUTH_BYPASS_ENABLED=true` is set — which is never true in the real deployment, since
+`wrangler.toml.example` doesn't define it. To use it locally, add a line to your gitignored
+`.dev.vars` file (create it if it doesn't exist):
+
+```
+DEV_AUTH_BYPASS_ENABLED=true
+```
+
+then send `X-Dev-User-Email: <any-email>` on write requests instead of authenticating via a
+real Access session.
+
 ## Deployment
 
 GitHub Actions builds, tests, applies D1 migrations, and deploys the Worker on every push to `main`.
