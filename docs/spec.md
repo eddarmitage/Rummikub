@@ -115,7 +115,7 @@ A player's running total = sum of `tiles_left_value` across their rounds in a ga
 | Route                              | Auth                                         |
 | ---------------------------------- | -------------------------------------------- |
 | `GET /games/:id`                   | Public                                       |
-| `POST /games`                      | Requires Access (write-gated from the start) |
+| `POST /games/new`                  | Requires Access (write-gated from the start) |
 | `POST /games/:id/players`          | Requires Access                              |
 | `POST /games/:id/rounds`           | Requires Access                              |
 | `PATCH /games/:id/rounds/:roundId` | Requires Access                              |
@@ -127,9 +127,11 @@ Error response shape, consistent across all routes:
 
 ## Auth
 
-**Cloudflare Access for Workers** (native integration, shipped Aug 14 2026) — attach an Access policy directly to the Worker; Cloudflare enforces authentication at the edge before the Worker's code runs. Inside the Worker, `ctx.access.getIdentity()` returns the authenticated user's email/name — no manual JWT verification needed.
+**Cloudflare Access**, scoped per-path rather than to the whole Worker — a self-hosted Access application with one destination per write route (`/games/new`, `/games/*/players`, `/games/*/rounds*`, `/auth/login`), sharing one Allow policy. Cloudflare enforces authentication at the edge before the Worker's code runs for those paths only; `GET /games/:id` is never covered, so it stays public. Inside the Worker, `ctx.access.getIdentity()` returns the authenticated user's email/name for any request that passed through one of those Access-protected paths — no manual JWT verification needed.
 
-- `game_members` (game_id, user_id, role) is populated automatically: the creator becomes `owner` on `POST /games`; any other Access-allowed user becomes `editor` on their first successful write to a game (mirroring how `users` itself is lazily upserted). **Not yet enforced** — v1 behavior is unchanged: any Access-allowed user can still write to any game, and `role` isn't read anywhere yet.
+  Whole-Worker Access (the "Protect this Worker behind Access" one-click toggle in the dashboard, or a self-hosted app's bare `/games` path with no wildcard) doesn't work here: Access path matching has no HTTP-method awareness and a bare path matches everything nested under it, so it can't distinguish `POST /games` from `GET /games/:id` — either one gates both, breaking public reads. This is why game creation lives at `POST /games/new` rather than `POST /games`: nothing about method-based scoping is possible, so the write route needs its own path shape instead.
+
+- `game_members` (game_id, user_id, role) is populated automatically: the creator becomes `owner` on `POST /games/new`; any other Access-allowed user becomes `editor` on their first successful write to a game (mirroring how `users` itself is lazily upserted). **Not yet enforced** — v1 behavior is unchanged: any Access-allowed user can still write to any game, and `role` isn't read anywhere yet.
 - Access controls *who can log in* (an allow-list of emails/domains, manageable via Cloudflare's API — can be wrapped in an "invite" admin flow in-app)
 - Your own `users` table in D1 controls *app-level identity* — upserted from Access identity on first authenticated write, or pre-created by an admin to link a player before that person has logged in
 - End state (not yet implemented): route handlers check `role` to gate specific actions per game — e.g. only an `owner` can remove members or mark a game complete. What exactly an `editor` can't do that an `owner` can is undecided (see AGENTS.md "Open design questions"). Access remains the front door throughout — it authenticates, your D1 schema will authorize once that ships.

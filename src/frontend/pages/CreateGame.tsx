@@ -41,7 +41,7 @@ export function CreateGame() {
     setError(null);
     try {
       const trimmedName = name.trim();
-      const { game } = await apiPost<{ game: Game }>("/games", trimmedName ? { name: trimmedName } : {});
+      const { game } = await apiPost<{ game: Game }>("/games/new", trimmedName ? { name: trimmedName } : {});
 
       const trimmedPlayers = players.map((p) => p.trim()).filter((p) => p.length > 0);
       for (const [index, playerName] of trimmedPlayers.entries()) {

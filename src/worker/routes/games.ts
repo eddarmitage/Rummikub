@@ -17,8 +17,12 @@ games.get("/:id", async (c) => {
   return c.json(detail);
 });
 
-// POST /api/games — creates a game; the authenticated caller becomes createdBy.
-games.post("/", requireAuth(), async (c) => {
+// POST /api/games/new — creates a game; the authenticated caller becomes createdBy.
+// Deliberately not POST /api/games: that path would be a structural prefix of the public
+// GET /api/games/:id route, and Cloudflare Access path-scoping matches prefixes (no
+// HTTP-method awareness) — see README "Auth setup" for the Access application config this
+// path needs to line up with.
+games.post("/new", requireAuth(), async (c) => {
   const body = await parseBody(c, createGameSchema);
   if (!body.ok) return body.response;
 
