@@ -12,7 +12,7 @@ const OWNER_HEADERS = { "X-Dev-User-Email": "owner@example.com", "content-type":
 const EDITOR_HEADERS = { "X-Dev-User-Email": "editor@example.com", "content-type": "application/json" };
 
 async function createGame() {
-  const res = await worker.fetch(`${API}/games`, {
+  const res = await worker.fetch(`${API}/games/new`, {
     method: "POST",
     headers: OWNER_HEADERS,
     body: JSON.stringify({ name: "Membership test" }),
@@ -27,7 +27,7 @@ async function membersFor(gameId: string) {
 }
 
 describe("game_members bookkeeping", () => {
-  it("adds the creator as owner on POST /api/games", async () => {
+  it("adds the creator as owner on POST /api/games/new", async () => {
     const game = await createGame();
     const members = await membersFor(game.id);
 
