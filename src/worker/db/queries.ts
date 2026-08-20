@@ -145,6 +145,10 @@ export async function listRoundScores(db: Db, roundId: string): Promise<Score[]>
   return db.query.scores.findMany({ where: eq(scores.roundId, roundId) });
 }
 
+export async function getRound(db: Db, roundId: string): Promise<Round | undefined> {
+  return db.query.rounds.findFirst({ where: eq(rounds.id, roundId) });
+}
+
 export async function listRounds(db: Db, gameId: string): Promise<RoundWithScores[]> {
   return db.query.rounds.findMany({
     where: eq(rounds.gameId, gameId),
