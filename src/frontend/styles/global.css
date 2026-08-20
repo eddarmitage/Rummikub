@@ -1,8 +1,280 @@
 :root {
   color-scheme: light;
   font-family: system-ui, sans-serif;
+  --color-bg: #f7f6f4;
+  --color-surface: #ffffff;
+  --color-border: #e3e1de;
+  --color-text: #16150f;
+  --color-text-muted: #8a877f;
+  --color-primary: #16150f;
+  --color-primary-text: #ffffff;
+  --color-badge-active-bg: #dcf0dd;
+  --color-badge-active-text: #2f7a3d;
+  --color-badge-complete-bg: #e9e8e5;
+  --color-badge-complete-text: #6b6a64;
+  --color-error: #b3261e;
+  --radius-card: 24px;
+  --radius-control: 14px;
+  --radius-pill: 999px;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* ---------------------------------------------------------------------------
+ * Design language across all screens (docs/spec.md): flat surfaces, no
+ * shadows/gradients, thin (0.5px) borders, numbers right-aligned, status via
+ * small colored badges, one solid primary action per screen.
+ * ------------------------------------------------------------------------- */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 28px;
+  height: fit-content;
+}
+
+.card h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.subheading {
+  margin: 6px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.badge {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.badge-active {
+  background: var(--color-badge-active-bg);
+  color: var(--color-badge-active-text);
+}
+
+.badge-complete {
+  background: var(--color-badge-complete-bg);
+  color: var(--color-badge-complete-text);
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+.scorecard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.scorecard-table th,
+.scorecard-table td {
+  padding: 10px 8px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.scorecard-table th:first-child,
+.scorecard-table td:first-child,
+.scorecard-table .round-number {
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+.scorecard-table thead th {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  border-bottom: none;
+}
+
+.scorecard-table tfoot .totals-row td {
+  font-weight: 700;
+  border-top: 0.5px solid var(--color-border);
+  padding-top: 14px;
+}
+
+.scorecard-table tfoot .totals-row td:first-child {
+  color: var(--color-text);
+}
+
+.empty-state {
+  color: var(--color-text-muted);
+  margin: 20px 0;
+}
+
+.button-primary,
+.button-outline {
+  width: 100%;
+  border-radius: var(--radius-pill);
+  padding: 15px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.button-primary {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  border: none;
+  margin-top: 4px;
+}
+
+.button-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.button-outline {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.button-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.button-row .button-outline {
+  flex: 1;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="number"] {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 12px 14px;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 100%;
+  color: var(--color-text);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+  outline: 2px solid var(--color-text);
+  outline-offset: -1px;
+}
+
+.player-rows {
+  margin-bottom: 20px;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.player-row input {
+  flex: 1;
+}
+
+.player-rows > .button-outline {
+  width: auto;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.round-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.round-player-row input {
+  max-width: 140px;
+  text-align: right;
+}
+
+.error {
+  color: var(--color-error);
+  font-size: 0.9rem;
+  margin: 4px 0 12px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 21, 15, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: 28px;
 }
