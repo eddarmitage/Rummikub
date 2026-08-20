@@ -2,8 +2,8 @@ import { asc, eq, sql } from "drizzle-orm";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import { nanoid } from "nanoid";
 import * as schema from "./schema";
-import { games, players, rounds, scores } from "./schema";
-import type { Game, NewGame, Player, Round, Score } from "./schema";
+import { games, players, rounds, scores, users } from "./schema";
+import type { Game, NewGame, Player, Round, Score, User, NewUser } from "./schema";
 
 const GAME_ID_LENGTH = 8;
 
@@ -199,4 +199,38 @@ export async function getGameDetail(db: Db, gameId: string): Promise<GameDetail 
   ]);
 
   return { game, players: gamePlayers, rounds: gameRounds, totals };
+}
+
+// ---------------------------------------------------------------------------
+// Users — populated lazily from Cloudflare Access identity (see docs/spec.md
+// "Auth" and src/worker/middleware/auth.ts). Added here as a small, additive
+// exception to #3's original scope (issue #5 needs it for the auth
+// middleware's upsert-on-first-write) — not a revision of anything #3
+// shipped (see plan Decision D4).
+// ---------------------------------------------------------------------------
+
+export interface UpsertUserInput {
+  email: string;
+  name?: string | null;
+}
+
+/** Finds a user by email, creating one on first authenticated write. If the user already
+ *  exists, a non-null `name` here refreshes the stored name (e.g. Access now supplies a
+ *  display name where an admin pre-created the row with none); passing `name: null` never
+ *  clobbers an existing stored name. */
+export async function getOrCreateUserByEmail(db: Db, input: UpsertUserInput): Promise<User> {
+  const [user] = await db
+    .insert(users)
+    .values({
+      id: nanoid(),
+      email: input.email,
+      name: input.name ?? null,
+      createdAt: new Date(),
+    } satisfies NewUser)
+    .onConflictDoUpdate({
+      target: users.email,
+      set: { name: sql`coalesce(${input.name ?? null}, ${users.name})` },
+    })
+    .returning();
+  return user;
 }
