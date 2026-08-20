@@ -34,6 +34,23 @@ export function apiGet<T>(path: string): Promise<T> {
   return request<T>(path);
 }
 
-export function apiPost<T>(path: string, body?: unknown): Promise<T> {
-  return request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+/**
+ * Write routes are Cloudflare Access-protected (README "Auth setup"). Without a live Access
+ * session, Access intercepts the request itself — before it ever reaches this Worker — and
+ * responds with a redirect to its hosted login, a different origin. A `fetch()` (unlike the
+ * top-level navigation `signIn()` uses) can't follow that cross-origin redirect, so it
+ * rejects with a generic network `TypeError` ("Load failed" in Safari, "Failed to fetch" in
+ * Chrome) instead of the clean 401 JSON callers expect. Re-surface that as the same
+ * UNAUTHENTICATED shape a real 401 would produce, so `isUnauthenticatedError()` → `signIn()`
+ * still kicks in instead of the caller showing that raw browser error text.
+ */
+export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  try {
+    return await request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+  } catch (err) {
+    if (err instanceof TypeError) {
+      throw new ApiRequestError(401, "UNAUTHENTICATED", "Sign in required.");
+    }
+    throw err;
+  }
 }
