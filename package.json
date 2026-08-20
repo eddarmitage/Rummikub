@@ -7,8 +7,12 @@
     "dev": "vite build && concurrently -n vite,wrangler -c blue,green \"vite build --watch\" \"wrangler dev\"",
     "build": "vite build",
     "deploy": "vite build && wrangler deploy",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
-    "cf-typegen": "wrangler types"
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.test.unit.json --noEmit && tsc -p tsconfig.test.integration.json --noEmit && tsc -p tsconfig.test.component.json --noEmit && tsc -p tsconfig.test.e2e.json --noEmit",
+    "cf-typegen": "wrangler types",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
@@ -19,20 +23,31 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
     "@cloudflare/workers-types": "^5.20260819.1",
+    "@playwright/test": "^1.62.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.5",
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.0.5",
     "concurrently": "^10.0.5",
     "drizzle-kit": "^0.31.10",
+    "jsdom": "^30.0.1",
+    "tsx": "^4.23.12",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",
+    "vitest": "^4.1.11",
     "wrangler": "^4.124.0"
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
     "workerd@1.20260815.1": true,
-    "fsevents@2.3.3": true
+    "fsevents@2.3.3": true,
+    "fsevents@2.3.2": true
   }
 }
