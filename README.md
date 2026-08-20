@@ -52,11 +52,23 @@ will recreate the database and regenerate config from scratch.
 
 Other commands:
 
-| Command             | Does                                                |
-| ------------------- | --------------------------------------------------- |
-| `npm run build`     | Builds the frontend into `dist/client`              |
-| `npm run deploy`    | Builds and deploys the Worker via `wrangler deploy` |
-| `npm run typecheck` | Type-checks the frontend and worker                 |
+| Command              | Does                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `npm run build`      | Builds the frontend into `dist/client`                                             |
+| `npm run deploy`     | Builds and deploys the Worker via `wrangler deploy`                                |
+| `npm run typecheck`  | Type-checks the frontend, worker, and all test suites                              |
+| `npm run test`       | Runs unit, integration (real `workerd` + local D1), and component tests (Vitest)   |
+| `npm run test:watch` | Same as `npm run test`, in watch mode                                              |
+| `npm run test:e2e`   | Runs the Playwright suite against a throwaway `wrangler dev` (`wrangler.e2e.toml`) |
+| `npm run seed`       | Populates local D1 with a fake game, for `wrangler dev` / manual e2e poking        |
+
+`npm run test` needs no setup — the integration project runs against a fully local D1
+instance via `@cloudflare/vitest-pool-workers` (see `wrangler.test.toml`), and `npm run
+test:e2e` spins up its own throwaway `wrangler dev` via `wrangler.e2e.toml` — neither needs
+`./scripts/bootstrap.sh` or a live Cloudflare account. `npm run seed` is the exception: it
+writes to whichever local D1 `wrangler dev` would use (`wrangler.toml` by default, or pass
+`-- --config <file>` to target a different one, e.g. `wrangler.e2e.toml`), so it needs that
+config (and its migrations) to already exist locally.
 
 ## Auth setup
 
