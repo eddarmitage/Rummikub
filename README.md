@@ -131,6 +131,14 @@ them, never real values):
 leaves blank placeholders on the generated `wrangler.toml` for you to fill in by hand. Writes
 401 until both are set to real values.
 
+**The real deploy (`.github/workflows/deploy.yml`) needs these set separately** — it
+regenerates `wrangler.toml` from scratch on every push to `main` from GitHub Actions
+Variables, the same way it sources `D1_DATABASE_ID` from a Secret. Add both under this repo's
+**Settings → Secrets and variables → Actions → Variables** (not Secrets — see the workflow
+comment for why): `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD`, same values as above. Editing your own
+local `wrangler.toml` has no effect on the deployed site; only these repo Variables do. This is
+a one-time step — once set, every future deploy picks them up automatically.
+
 **Local development / testing bypass:** there's no live Access session (and therefore no
 `Cf-Access-Jwt-Assertion` header) under `wrangler dev` or the test suites.
 `src/worker/middleware/auth.ts` accepts an `X-Dev-User-Email` header as a stand-in identity,
