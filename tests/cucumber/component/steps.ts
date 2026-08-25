@@ -3,7 +3,9 @@ import { render, waitFor, type RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import assert from "node:assert/strict";
 import { createElement } from "react";
+import { CreateGame } from "../../../src/frontend/pages/CreateGame";
 import { Game } from "../../../src/frontend/pages/Game";
+import { fakeLocation } from "./dom-setup";
 import type { ComponentWorld } from "./world";
 
 // Deliberately not using @testing-library/react's `screen` singleton: it resolves `document`
@@ -64,4 +66,32 @@ Then("the score should show:", function (this: ComponentWorld, table: DataTable)
 
 Then("they should be redirected to sign in", function () {
   assert.match(window.location.href, /^\/api\/auth\/login/);
+});
+
+When("I try to create a game with players:", async function (this: ComponentWorld, table: DataTable) {
+  const user = userEvent.setup({ document });
+  this.view = render(createElement(CreateGame));
+  const names = table.rows().flat();
+  // The form starts with 2 blank player rows -- add a row for anyone beyond that, same as a
+  // real user clicking "+ Add player" (mirrors the e2e layer's "Given a game with players:").
+  for (let i = 2; i < names.length; i++) {
+    await user.click(this.view.getByRole("button", { name: "+ Add player" }));
+  }
+  for (const [index, name] of names.entries()) {
+    await user.type(this.view.getByPlaceholderText(`Player ${index + 1}`), name);
+  }
+  await user.click(this.view.getByRole("button", { name: "+ Start new game" }));
+});
+
+Then("I should see the error {string}", async function (this: ComponentWorld, message: string) {
+  const errorEl = await waitFor(() => {
+    const el = document.querySelector(".error");
+    assert.ok(el, "expected an error message to be shown");
+    return el!;
+  });
+  assert.equal(errorEl.textContent, message);
+});
+
+Then("I should still be on the create-game form", function () {
+  assert.equal(fakeLocation.href, "/");
 });

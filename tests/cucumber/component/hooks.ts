@@ -41,6 +41,29 @@ async function handleFakeRequest(world: ComponentWorld, path: string, method: st
     });
   }
 
+  if (path === "/api/games/new" && method === "POST") {
+    return jsonResponse(
+      { game: { id: world.gameId, name: "Cucumber component game", status: "active", createdAt: new Date().toISOString(), createdBy: null } },
+      201,
+    );
+  }
+
+  const addPlayerMatch = path.match(/^\/api\/games\/([^/]+)\/players$/);
+  if (addPlayerMatch && method === "POST") {
+    // Mirrors src/worker/routes/games.ts's own duplicate check (#31) -- kept as a small
+    // hand-written copy here rather than importing the route handler, same call as the
+    // 401-simulation below: there's no shared helper worth extracting for a one-line check.
+    const { name } = JSON.parse(String(rawBody)) as { name: string };
+    const trimmedName = name.trim();
+    const nameTaken = world.players.some((p) => p.name.toLowerCase() === trimmedName.toLowerCase());
+    if (nameTaken) {
+      return jsonResponse({ error: { code: "VALIDATION_ERROR", message: "A player with that name already exists in this game." } }, 400);
+    }
+    const player = { id: `p${world.players.length + 1}`, gameId: world.gameId, name: trimmedName, sortOrder: world.players.length };
+    world.players.push(player);
+    return jsonResponse({ player }, 201);
+  }
+
   const roundsMatch = path.match(/^\/api\/games\/([^/]+)\/rounds$/);
   if (roundsMatch && method === "POST") {
     if (world.simulateUnauthenticated) {
