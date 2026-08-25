@@ -159,6 +159,12 @@ GitHub Actions builds, tests, applies D1 migrations, and deploys the Worker on e
 There's no staging environment — the CI pipeline (type checks, tests, branch protection) is the
 safety net instead of a parallel deploy target.
 
+**Custom domain (optional):** by default the Worker deploys to its `*.workers.dev` subdomain. To
+deploy to your own domain instead, set the `CUSTOM_DOMAIN` repo variable (Settings → Secrets and
+variables → Actions → Variables) to the hostname, e.g. `scores.example.com`. The domain must
+already be added to your Cloudflare account (as a zone) before this will work. Leave the variable
+unset to keep deploying to `*.workers.dev`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
