@@ -73,3 +73,26 @@ Then(
 Then("they should be redirected to sign in", async function (this: E2EWorld) {
   await this.anonymousPage!.waitForURL(/\/api\/auth\/login/);
 });
+
+When("I try to create a game with players:", async function (this: E2EWorld, table: DataTable) {
+  const names = table.rows().flat();
+  await this.page.goto("/");
+  await this.page.getByLabel("Game name").fill("Cucumber e2e duplicate-name game");
+  for (let i = 2; i < names.length; i++) {
+    await this.page.getByRole("button", { name: "+ Add player" }).click();
+  }
+  for (const [index, name] of names.entries()) {
+    await this.page.getByPlaceholder(`Player ${index + 1}`).fill(name);
+  }
+  await this.page.getByRole("button", { name: "+ Start new game" }).click();
+});
+
+Then("I should see the error {string}", async function (this: E2EWorld, message: string) {
+  const errorLocator = this.page.locator(".error");
+  await errorLocator.waitFor();
+  assert.equal(await errorLocator.textContent(), message);
+});
+
+Then("I should still be on the create-game form", async function (this: E2EWorld) {
+  assert.equal(new URL(this.page.url()).pathname, "/");
+});

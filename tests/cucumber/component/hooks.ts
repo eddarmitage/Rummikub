@@ -1,5 +1,6 @@
 import { After, Before } from "@cucumber/cucumber";
 import { cleanup } from "@testing-library/react";
+import { isDuplicatePlayerName } from "../../../src/worker/lib/players";
 import { computeRoundScores } from "../../../src/worker/lib/scoring";
 import { fakeLocation } from "./dom-setup";
 import type { ComponentWorld } from "./world";
@@ -39,6 +40,25 @@ async function handleFakeRequest(world: ComponentWorld, path: string, method: st
       rounds: world.rounds,
       totals: world.players.map((p) => ({ playerId: p.id, total: totalsByPlayer.get(p.id) ?? 0 })),
     });
+  }
+
+  if (path === "/api/games/new" && method === "POST") {
+    return jsonResponse(
+      { game: { id: world.gameId, name: "Cucumber component game", status: "active", createdAt: new Date().toISOString(), createdBy: null } },
+      201,
+    );
+  }
+
+  const addPlayerMatch = path.match(/^\/api\/games\/([^/]+)\/players$/);
+  if (addPlayerMatch && method === "POST") {
+    const { name } = JSON.parse(String(rawBody)) as { name: string };
+    const trimmedName = name.trim();
+    if (isDuplicatePlayerName(world.players, trimmedName)) {
+      return jsonResponse({ error: { code: "VALIDATION_ERROR", message: "A player with that name already exists in this game." } }, 400);
+    }
+    const player = { id: `p${world.players.length + 1}`, gameId: world.gameId, name: trimmedName, sortOrder: world.players.length };
+    world.players.push(player);
+    return jsonResponse({ player }, 201);
   }
 
   const roundsMatch = path.match(/^\/api\/games\/([^/]+)\/rounds$/);

@@ -154,4 +154,26 @@ describe("POST /api/games/:id/players", () => {
     const json = (await res.json()) as ApiErrorBody;
     expect(json.error.code).toBe("VALIDATION_ERROR");
   });
+
+  // The rejection itself (case-insensitive, post-trim) is covered by
+  // tests/cucumber/features/duplicate-player-names.feature's integration-layer step, which hits
+  // this same real route — no need to duplicate that here. This case is the one genuine
+  // no-UI-angle edge of the check (scoping to a single game), so it stays a direct test.
+  it("allows the same name in a different game", async () => {
+    const gameOne = await createGame();
+    const gameTwo = await createGame();
+    await worker.fetch(`${GAMES_URL}/${gameOne.id}/players`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ name: "Alice" }),
+    });
+
+    const res = await worker.fetch(`${GAMES_URL}/${gameTwo.id}/players`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ name: "Alice" }),
+    });
+
+    expect(res.status).toBe(201);
+  });
 });
