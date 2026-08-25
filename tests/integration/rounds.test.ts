@@ -123,20 +123,9 @@ describe("POST /api/games/:id/rounds", () => {
     expect(round2.roundNumber).toBe(2);
   });
 
-  it("computes round scores: the player with the fewest tiles is credited everyone else's rack value", async () => {
-    const { game, players } = await createGameWithPlayers(["Alice", "Bob", "Carol"]);
-
-    const round = await addRound(game.id, [
-      { playerId: players[0].id, tiles: [] }, // Alice goes out
-      { playerId: players[1].id, tiles: ["5"] },
-      { playerId: players[2].id, tiles: ["10", "J"] },
-    ]);
-
-    const byPlayer = new Map(round.scores.map((s) => [s.playerId, s.roundScore]));
-    expect(byPlayer.get(players[0].id)).toBe(45); // 5 + (10 + 30)
-    expect(byPlayer.get(players[1].id)).toBe(-5);
-    expect(byPlayer.get(players[2].id)).toBe(-40);
-  });
+  // Round-scoring math itself (fewest tiles credited everyone else's rack value, jokers, ties)
+  // is covered by the shared scenario catalog (tests/cucumber/features/round-scoring.feature)
+  // at this layer and two others — see AGENTS.md "Testing conventions".
 });
 
 describe("PATCH /api/games/:id/rounds/:roundId", () => {
