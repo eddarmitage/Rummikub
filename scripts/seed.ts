@@ -24,10 +24,11 @@ const DEMO_GAME_ID = "demoseed";
 const DEMO_USER_ID = "demoseeduser";
 const DEMO_USER_EMAIL = "seed@example.com";
 const DEMO_PLAYER_NAMES = ["Alice", "Bob", "Carol"];
-// One row per round, one value per player (matching DEMO_PLAYER_NAMES order).
-const DEMO_ROUND_SCORES = [
-  [12, 0, 34],
-  [0, 8, 15],
+// One row per round, one tile list per player (matching DEMO_PLAYER_NAMES order). An empty
+// array means that player went out (round winner).
+const DEMO_ROUND_SCORES: string[][][] = [
+  [["3", "9", "J"], [], ["4", "13", "12", "5"]],
+  [[], ["8"], ["7", "8"]],
 ];
 
 function parseConfigPathArg(): string | undefined {
@@ -85,7 +86,7 @@ async function main() {
         seededPlayers.map((player, i) => ({
           roundId: round.id,
           playerId: player.id,
-          tilesLeftValue: DEMO_ROUND_SCORES[r][i],
+          tiles: JSON.stringify(DEMO_ROUND_SCORES[r][i]),
         })),
       );
     }

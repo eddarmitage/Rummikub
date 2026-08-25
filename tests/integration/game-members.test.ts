@@ -89,7 +89,7 @@ describe("game_members bookkeeping", () => {
     await worker.fetch(`${API}/games/${game.id}/rounds`, {
       method: "POST",
       headers: EDITOR_HEADERS,
-      body: JSON.stringify({ scores: [{ playerId: player.id, tilesLeftValue: 5 }] }),
+      body: JSON.stringify({ scores: [{ playerId: player.id, tiles: ["5"] }] }),
     });
 
     const members = await membersFor(game.id);

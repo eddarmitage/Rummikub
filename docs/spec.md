@@ -6,7 +6,10 @@ A web app to track Rummikub game scores, hosted entirely on Cloudflare's develop
 
 - Each game gets a UUID-free shareable link using an 8-char nanoid (e.g. `/g/aB3xK9mQ`)
 - Anyone with the link can view the scorecard — running totals per player, one row per round
-- Players enter the number of points left on their rack at the end of each round; the app tallies totals
+- Players enter the tiles left on their rack at the end of each round (e.g. "3 5 8 J 12"; blank
+  if they went out); the app computes each round's score per official Rummikub rules — the
+  player with the fewest tiles is credited the sum of everyone else's rack value (face value,
+  jokers = 30), everyone else is debited their own — and tallies running totals
 - Once auth exists, submitting/editing scores and creating games requires being logged in
 - Per-game membership (`game_members`) is tracked automatically; role-based permissions aren't enforced yet. Later: league tables aggregating a player's results across games
 
@@ -78,7 +81,7 @@ CREATE TABLE rounds (
 CREATE TABLE scores (
   round_id TEXT NOT NULL REFERENCES rounds(id),
   player_id TEXT NOT NULL REFERENCES players(id),
-  tiles_left_value INTEGER NOT NULL,
+  tiles TEXT NOT NULL,   -- JSON array of remaining-tile tokens, e.g. '["3","5","J"]'; "J" = joker
   PRIMARY KEY (round_id, player_id)
 );
 
@@ -104,7 +107,12 @@ CREATE INDEX idx_scores_round ON scores(round_id);
 CREATE INDEX idx_game_members_user ON game_members(user_id);
 ```
 
-A player's running total = sum of `tiles_left_value` across their rounds in a game, computed on read.
+Each round's per-player score is computed on read from `tiles` (src/worker/lib/scoring.ts): the
+player with the fewest tiles left is credited the sum of every other player's rack value (face
+value of each tile, jokers = 30); everyone else is debited their own rack value. A tie for fewest
+tiles (nobody went out) has no bonus that round — every player is just debited their own rack
+value. A player's running total = sum of their computed round scores across a game, also computed
+on read.
 
 **Open design question, not yet settled**: how league tables should group games — automatically (any games a user played in) vs an explicit "league" entity (a named group of users/games set up deliberately). Decide before building that feature; doesn't block v1.
 
@@ -187,7 +195,9 @@ Core screens roughed out during design. Mockup screenshots live alongside this d
 ### Scorecard (`/g/:id`) — the primary screen
 - Card layout: game name as header, with a status badge ("Active" / "Complete")
 - Subheading: current round number and when the game started
-- A table: one row per round, one column per player, values are that round's tiles-left score; a totals row at the bottom, bold, separated by a divider
+- A table: one row per round, one column per player, each cell showing that round's computed
+  score (signed) with the entered tiles underneath for reference; a totals row at the bottom,
+  bold, separated by a divider
 - Players are sorted left to right in a fixed order (decided when the game/players are created); rows are chronological by round
 - Primary action button: "Add round" — full width, prominent, always visible when the game is active
 - Two secondary actions below it, side by side: "Share link" (copies/shares the URL) and "Sign in" (only relevant once the person tries to add a round or edit — this button doesn't gate viewing, it's there so returning players can authenticate ahead of writing)
@@ -197,8 +207,10 @@ Core screens roughed out during design. Mockup screenshots live alongside this d
 - Triggered from the "Add round" button on the scorecard
 - Small centered card over a dimmed background
 - Header shows which round number is being entered, with a close (×) affordance
-- One row per player: name on the left, a numeric input on the right for that player's tiles-left value
-- Single "Save round" button at the bottom, full width
+- One row per player: name on the left, a free-text input on the right for the tiles left on
+  their rack (e.g. "3 5 8 12"; J or * for a joker; blank means they went out), with a live hint
+  showing the parsed tile count and rack value, or a validation error for an unrecognized token
+- Single "Save round" button at the bottom, full width; disabled while any row has an invalid tile
 - This is the write action that requires auth — if the person isn't signed in when they try to save, this is the natural point to prompt sign-in rather than gating it earlier
 
 ### Home (only meaningful once auth/users exist — not part of v1's link-only flow)

@@ -29,7 +29,7 @@ async function createGameWithPlayers(playerNames: string[]) {
   return { game, players };
 }
 
-async function addRound(gameId: string, scores: { playerId: string; tilesLeftValue: number }[]) {
+async function addRound(gameId: string, scores: { playerId: string; tiles: string[] }[]) {
   const res = await worker.fetch(`${API}/games/${gameId}/rounds`, {
     method: "POST",
     headers: AUTH_HEADERS,
@@ -45,7 +45,7 @@ describe("POST /api/games/:id/rounds", () => {
     const res = await worker.fetch(`${API}/games/${game.id}/rounds`, {
       method: "POST",
       headers: JSON_HEADERS,
-      body: JSON.stringify({ scores: [{ playerId: players[0].id, tilesLeftValue: 5 }] }),
+      body: JSON.stringify({ scores: [{ playerId: players[0].id, tiles: ["5"] }] }),
     });
 
     expect(res.status).toBe(401);
@@ -55,7 +55,7 @@ describe("POST /api/games/:id/rounds", () => {
     const res = await worker.fetch(`${API}/games/does-not-exist/rounds`, {
       method: "POST",
       headers: AUTH_HEADERS,
-      body: JSON.stringify({ scores: [{ playerId: "p1", tilesLeftValue: 5 }] }),
+      body: JSON.stringify({ scores: [{ playerId: "p1", tiles: ["5"] }] }),
     });
 
     expect(res.status).toBe(404);
@@ -76,12 +76,25 @@ describe("POST /api/games/:id/rounds", () => {
     expect(json.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("400s with VALIDATION_ERROR for an invalid tile token", async () => {
+    const { game, players } = await createGameWithPlayers(["Alice"]);
+    const res = await worker.fetch(`${API}/games/${game.id}/rounds`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ scores: [{ playerId: players[0].id, tiles: ["14"] }] }),
+    });
+
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as ApiErrorBody;
+    expect(json.error.code).toBe("VALIDATION_ERROR");
+  });
+
   it("400s with INVALID_PLAYER for a playerId not in the game", async () => {
     const { game } = await createGameWithPlayers(["Alice"]);
     const res = await worker.fetch(`${API}/games/${game.id}/rounds`, {
       method: "POST",
       headers: AUTH_HEADERS,
-      body: JSON.stringify({ scores: [{ playerId: "not-a-real-player", tilesLeftValue: 5 }] }),
+      body: JSON.stringify({ scores: [{ playerId: "not-a-real-player", tiles: ["5"] }] }),
     });
 
     expect(res.status).toBe(400);
@@ -93,8 +106,8 @@ describe("POST /api/games/:id/rounds", () => {
     const { game, players } = await createGameWithPlayers(["Alice", "Bob"]);
 
     const round = await addRound(game.id, [
-      { playerId: players[0].id, tilesLeftValue: 12 },
-      { playerId: players[1].id, tilesLeftValue: 0 },
+      { playerId: players[0].id, tiles: ["1", "2"] },
+      { playerId: players[1].id, tiles: [] },
     ]);
 
     expect(round.roundNumber).toBe(1);
@@ -103,23 +116,38 @@ describe("POST /api/games/:id/rounds", () => {
 
   it("auto-numbers a second round as 2", async () => {
     const { game, players } = await createGameWithPlayers(["Alice"]);
-    await addRound(game.id, [{ playerId: players[0].id, tilesLeftValue: 3 }]);
+    await addRound(game.id, [{ playerId: players[0].id, tiles: ["3"] }]);
 
-    const round2 = await addRound(game.id, [{ playerId: players[0].id, tilesLeftValue: 7 }]);
+    const round2 = await addRound(game.id, [{ playerId: players[0].id, tiles: ["7"] }]);
 
     expect(round2.roundNumber).toBe(2);
+  });
+
+  it("computes round scores: the player with the fewest tiles is credited everyone else's rack value", async () => {
+    const { game, players } = await createGameWithPlayers(["Alice", "Bob", "Carol"]);
+
+    const round = await addRound(game.id, [
+      { playerId: players[0].id, tiles: [] }, // Alice goes out
+      { playerId: players[1].id, tiles: ["5"] },
+      { playerId: players[2].id, tiles: ["10", "J"] },
+    ]);
+
+    const byPlayer = new Map(round.scores.map((s) => [s.playerId, s.roundScore]));
+    expect(byPlayer.get(players[0].id)).toBe(45); // 5 + (10 + 30)
+    expect(byPlayer.get(players[1].id)).toBe(-5);
+    expect(byPlayer.get(players[2].id)).toBe(-40);
   });
 });
 
 describe("PATCH /api/games/:id/rounds/:roundId", () => {
   it("401s with UNAUTHENTICATED when no auth is supplied", async () => {
     const { game, players } = await createGameWithPlayers(["Alice"]);
-    const round = await addRound(game.id, [{ playerId: players[0].id, tilesLeftValue: 10 }]);
+    const round = await addRound(game.id, [{ playerId: players[0].id, tiles: ["10"] }]);
 
     const res = await worker.fetch(`${API}/games/${game.id}/rounds/${round.id}`, {
       method: "PATCH",
       headers: JSON_HEADERS,
-      body: JSON.stringify({ scores: [{ playerId: players[0].id, tilesLeftValue: 3 }] }),
+      body: JSON.stringify({ scores: [{ playerId: players[0].id, tiles: ["3"] }] }),
     });
 
     expect(res.status).toBe(401);
@@ -129,7 +157,7 @@ describe("PATCH /api/games/:id/rounds/:roundId", () => {
     const res = await worker.fetch(`${API}/games/does-not-exist/rounds/does-not-exist`, {
       method: "PATCH",
       headers: AUTH_HEADERS,
-      body: JSON.stringify({ scores: [{ playerId: "p1", tilesLeftValue: 3 }] }),
+      body: JSON.stringify({ scores: [{ playerId: "p1", tiles: ["3"] }] }),
     });
 
     expect(res.status).toBe(404);
@@ -142,7 +170,7 @@ describe("PATCH /api/games/:id/rounds/:roundId", () => {
     const res = await worker.fetch(`${API}/games/${game.id}/rounds/does-not-exist`, {
       method: "PATCH",
       headers: AUTH_HEADERS,
-      body: JSON.stringify({ scores: [{ playerId: "p1", tilesLeftValue: 3 }] }),
+      body: JSON.stringify({ scores: [{ playerId: "p1", tiles: ["3"] }] }),
     });
 
     expect(res.status).toBe(404);
@@ -152,12 +180,12 @@ describe("PATCH /api/games/:id/rounds/:roundId", () => {
 
   it("400s with INVALID_PLAYER for a playerId not in the game", async () => {
     const { game, players } = await createGameWithPlayers(["Alice"]);
-    const round = await addRound(game.id, [{ playerId: players[0].id, tilesLeftValue: 10 }]);
+    const round = await addRound(game.id, [{ playerId: players[0].id, tiles: ["10"] }]);
 
     const res = await worker.fetch(`${API}/games/${game.id}/rounds/${round.id}`, {
       method: "PATCH",
       headers: AUTH_HEADERS,
-      body: JSON.stringify({ scores: [{ playerId: "not-a-real-player", tilesLeftValue: 3 }] }),
+      body: JSON.stringify({ scores: [{ playerId: "not-a-real-player", tiles: ["3"] }] }),
     });
 
     expect(res.status).toBe(400);
@@ -167,17 +195,17 @@ describe("PATCH /api/games/:id/rounds/:roundId", () => {
 
   it("upserts (overwrites) scores for the round", async () => {
     const { game, players } = await createGameWithPlayers(["Alice"]);
-    const round = await addRound(game.id, [{ playerId: players[0].id, tilesLeftValue: 10 }]);
+    const round = await addRound(game.id, [{ playerId: players[0].id, tiles: ["10"] }]);
 
     const res = await worker.fetch(`${API}/games/${game.id}/rounds/${round.id}`, {
       method: "PATCH",
       headers: AUTH_HEADERS,
-      body: JSON.stringify({ scores: [{ playerId: players[0].id, tilesLeftValue: 3 }] }),
+      body: JSON.stringify({ scores: [{ playerId: players[0].id, tiles: ["3"] }] }),
     });
 
     expect(res.status).toBe(200);
     const { scores } = (await res.json()) as ScoresResponse;
     expect(scores).toHaveLength(1);
-    expect(scores[0].tilesLeftValue).toBe(3);
+    expect(scores[0].tiles).toEqual(["3"]);
   });
 });

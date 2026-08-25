@@ -4,6 +4,10 @@ import { apiGet, ApiRequestError } from "../lib/api";
 import { signIn } from "../lib/auth";
 import type { GameDetail } from "../lib/types";
 
+function formatSigned(n: number): string {
+  return n > 0 ? `+${n}` : `${n}`;
+}
+
 function formatStartTime(iso: string): string {
   const d = new Date(iso);
   const minutes = d.getMinutes().toString().padStart(2, "0");
@@ -102,13 +106,22 @@ export function Game({ gameId }: { gameId: string }) {
               </thead>
               <tbody>
                 {rounds.map((round) => {
-                  const scoresByPlayer = new Map(round.scores.map((s) => [s.playerId, s.tilesLeftValue]));
+                  const scoresByPlayer = new Map(round.scores.map((s) => [s.playerId, s]));
                   return (
                     <tr key={round.id}>
                       <td className="round-number">{round.roundNumber}</td>
-                      {players.map((p) => (
-                        <td key={p.id}>{scoresByPlayer.get(p.id) ?? "–"}</td>
-                      ))}
+                      {players.map((p) => {
+                        const score = scoresByPlayer.get(p.id);
+                        if (!score) return <td key={p.id}>–</td>;
+                        return (
+                          <td key={p.id}>
+                            <div className="round-score">{formatSigned(score.roundScore)}</div>
+                            <div className="round-score-tiles">
+                              {score.tiles.length > 0 ? score.tiles.join(" ") : "went out"}
+                            </div>
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
@@ -117,7 +130,7 @@ export function Game({ gameId }: { gameId: string }) {
                 <tr className="totals-row">
                   <td>Total</td>
                   {players.map((p) => (
-                    <td key={p.id}>{totalsByPlayer.get(p.id) ?? 0}</td>
+                    <td key={p.id}>{formatSigned(totalsByPlayer.get(p.id) ?? 0)}</td>
                   ))}
                 </tr>
               </tfoot>

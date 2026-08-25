@@ -20,7 +20,8 @@ export interface Player {
 export interface Score {
   roundId: string;
   playerId: string;
-  tilesLeftValue: number;
+  tiles: string[];
+  roundScore: number;
 }
 
 export interface Round {
