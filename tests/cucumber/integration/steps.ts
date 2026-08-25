@@ -39,6 +39,31 @@ When("round {int} is played:", async function (this: IntegrationWorld, _roundNum
   assert.equal(res.status, 201, `round save failed: ${await res.text()}`);
 });
 
+When("I try to create a game with players:", async function (this: IntegrationWorld, table: DataTable) {
+  const gameRes = await fetch(`${BASE_URL}/games/new`, {
+    method: "POST",
+    headers: AUTH_HEADERS,
+    body: JSON.stringify({ name: "Cucumber integration duplicate-name game" }),
+  });
+  const { game } = (await gameRes.json()) as { game: { id: string } };
+  this.gameId = game.id;
+
+  for (const name of table.rows().flat()) {
+    this.lastPlayerResponse = await fetch(`${BASE_URL}/games/${this.gameId}/players`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ name }),
+    });
+  }
+});
+
+Then("I should see the error {string}", async function (this: IntegrationWorld, message: string) {
+  assert.ok(this.lastPlayerResponse, "no add-player response captured — was 'I try to create a game with players:' run first?");
+  assert.equal(this.lastPlayerResponse!.status, 400);
+  const json = (await this.lastPlayerResponse!.json()) as { error: { message: string } };
+  assert.equal(json.error.message, message);
+});
+
 Then("the score should show:", async function (this: IntegrationWorld, table: DataTable) {
   const res = await fetch(`${BASE_URL}/games/${this.gameId}`);
   const detail = (await res.json()) as { totals: { playerId: string; total: number }[] };

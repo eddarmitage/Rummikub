@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { addPlayer, createDb, createGame, ensureGameMember, getGame, getGameDetail, listPlayers } from "../db/queries";
 import { errorResponse, parseBody } from "../lib/http";
+import { isDuplicatePlayerName } from "../lib/players";
 import { requireAuth, type AuthVariables } from "../middleware/auth";
 import { rounds } from "./rounds";
 import { addPlayerSchema, createGameSchema } from "./schemas";
@@ -46,10 +47,7 @@ games.post("/:id/players", requireAuth(), async (c) => {
   if (!body.ok) return body.response;
 
   const existingPlayers = await listPlayers(db, gameId);
-  const nameTaken = existingPlayers.some(
-    (p) => p.name.toLowerCase() === body.data.name.toLowerCase(),
-  );
-  if (nameTaken) {
+  if (isDuplicatePlayerName(existingPlayers, body.data.name)) {
     return errorResponse(c, 400, "VALIDATION_ERROR", "A player with that name already exists in this game.");
   }
 

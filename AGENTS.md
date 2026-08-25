@@ -100,17 +100,31 @@ grows.
   - A scenario is **default-inclusive** — untagged, it's expected to pass at all three layers.
   - Add `@no-component`, `@no-integration`, or `@no-e2e` only when a scenario genuinely doesn't
     apply at that layer (e.g. "the button isn't shown" has no backend equivalent) — never as a
-    way to skip a layer that's merely inconvenient to implement.
+    way to skip a layer that's merely inconvenient to implement. "This is API validation, not a
+    UI concern" is *not* by itself a reason for `@no-integration` — the integration layer isn't
+    UI-only, its steps just talk raw HTTP instead of the DOM (see `round-scoring.feature`'s
+    integration steps, which POST directly and assert on the JSON response). Reach for
+    `@no-integration` only when the behaviour has no HTTP-level equivalent at all — e.g.
+    `sign-in-prompt.feature`'s browser redirect, or `duplicate-player-names.feature`'s "the form
+    doesn't navigate away," both of which are frontend-only by nature, not just inconvenient to
+    hit over HTTP.
   - An untagged scenario with a step missing from one layer's suite fails there as
     "undefined," not silently — that's the coverage signal working as intended; fix by adding
     the step, not by reaching for an exclusion tag.
   - The component layer stubs `fetch` against an in-memory game (see
-    `tests/cucumber/component/hooks.ts`) rather than hitting a real server — it reuses the real
-    `computeRoundScores()` so the math stays honest without a third hand-written copy of the
-    scoring rules.
+    `tests/cucumber/component/hooks.ts`) rather than hitting a real server. Where the behaviour
+    being faked already has a real, exported implementation (`computeRoundScores()` for scoring,
+    `isDuplicatePlayerName()` for the players route), the stub must call that function rather
+    than hand-copying the logic — a hand-copy can silently drift from the real behaviour it's
+    meant to be standing in for, which defeats the point of a shared scenario. If no such
+    function exists yet, extract one instead of inlining the check in both places.
   - New scenario-worthy behaviour (a new route, a new UI flow) belongs here, not as a fresh
-    Vitest/Playwright test file, unless it's genuinely single-layer (e.g. a pure validation
-    edge case with no UI angle belongs in `tests/integration/` directly).
+    Vitest/Playwright test file — including pure API-contract checks, via the integration
+    layer's raw-HTTP steps, per above. Reach for a direct `tests/integration/` test only when a
+    case is single-layer in a stronger sense than "no UI": nothing to render and no distinct
+    request/response to assert on beyond what the shared scenario already covers (e.g. confirming
+    a uniqueness check is correctly scoped per-game rather than global — same check, just a data
+    boundary with nothing further for a Gherkin scenario to usefully narrate).
 
 ## Open design questions
 

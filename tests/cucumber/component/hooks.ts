@@ -1,5 +1,6 @@
 import { After, Before } from "@cucumber/cucumber";
 import { cleanup } from "@testing-library/react";
+import { isDuplicatePlayerName } from "../../../src/worker/lib/players";
 import { computeRoundScores } from "../../../src/worker/lib/scoring";
 import { fakeLocation } from "./dom-setup";
 import type { ComponentWorld } from "./world";
@@ -50,13 +51,9 @@ async function handleFakeRequest(world: ComponentWorld, path: string, method: st
 
   const addPlayerMatch = path.match(/^\/api\/games\/([^/]+)\/players$/);
   if (addPlayerMatch && method === "POST") {
-    // Mirrors src/worker/routes/games.ts's own duplicate check (#31) -- kept as a small
-    // hand-written copy here rather than importing the route handler, same call as the
-    // 401-simulation below: there's no shared helper worth extracting for a one-line check.
     const { name } = JSON.parse(String(rawBody)) as { name: string };
     const trimmedName = name.trim();
-    const nameTaken = world.players.some((p) => p.name.toLowerCase() === trimmedName.toLowerCase());
-    if (nameTaken) {
+    if (isDuplicatePlayerName(world.players, trimmedName)) {
       return jsonResponse({ error: { code: "VALIDATION_ERROR", message: "A player with that name already exists in this game." } }, 400);
     }
     const player = { id: `p${world.players.length + 1}`, gameId: world.gameId, name: trimmedName, sortOrder: world.players.length };

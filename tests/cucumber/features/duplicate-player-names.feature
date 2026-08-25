@@ -1,18 +1,26 @@
 Feature: Duplicate player names
 
-  Player names must be unique within a game, case-insensitive and post-trim (#31). The
-  create-game form (CreateGame.tsx) is the only place a player's name is entered -- it submits
-  each player row through POST /games/:id/players in turn -- so this exercises the rejection as
-  a user actually experiences it: the form stays put and shows the API's error message instead
-  of navigating to the new game. Excluded from the integration layer with @no-integration --
-  the API contract itself (status code, error shape) is already covered directly by
-  tests/integration/games.test.ts; integration has no UI to check this against.
+  Player names must be unique within a game, case-insensitive and post-trim (#31,
+  src/worker/lib/players.ts). The rejection itself is a real API contract, so -- same as
+  round-scoring.feature -- the integration layer verifies it for real (workerd + D1) via raw
+  HTTP, not a separate Vitest test: there's no second hand-written implementation of the check
+  for a dedicated test to guard against drifting, and the component layer's stubbed fetch
+  (tests/cucumber/component/hooks.ts) calls the same isDuplicatePlayerName() the route does,
+  so it can't drift from it either.
 
-  @no-integration
   Scenario: A duplicate player name is rejected when creating a game
     When I try to create a game with players:
       | name  |
       | Alice |
       | alice |
     Then I should see the error "A player with that name already exists in this game."
-    And I should still be on the create-game form
+
+  # Confirming the create-game form doesn't navigate away on that error is purely a frontend
+  # concern -- like sign-in-prompt.feature's redirect check -- so this half is @no-integration.
+  @no-integration
+  Scenario: The create-game form stays put after a duplicate-name rejection
+    When I try to create a game with players:
+      | name  |
+      | Alice |
+      | alice |
+    Then I should still be on the create-game form
