@@ -1,6 +1,7 @@
 import { asc, eq, sql } from "drizzle-orm";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import { nanoid } from "nanoid";
+import { computeRoundScores } from "../lib/scoring";
 import * as schema from "./schema";
 import { games, players, rounds, scores, users, gameMembers } from "./schema";
 import type { Game, NewGame, Player, Round, Score, User, NewUser, GameMember, NewGameMember } from "./schema";
@@ -78,10 +79,28 @@ export async function listPlayers(db: Db, gameId: string): Promise<Player[]> {
 
 export interface RoundScoreInput {
   playerId: string;
-  tilesLeftValue: number;
+  tiles: string[];
 }
 
-export type RoundWithScores = Round & { scores: Score[] };
+/** A score row with `tiles` parsed back out of storage and `roundScore` computed against the
+ *  rest of that round's entries (see src/worker/lib/scoring.ts) — what routes actually return. */
+export interface ScoreDetail {
+  roundId: string;
+  playerId: string;
+  tiles: string[];
+  roundScore: number;
+}
+
+export type RoundWithScores = Round & { scores: ScoreDetail[] };
+
+/** Parses each row's stored `tiles` JSON and computes round scores across the whole set —
+ *  scoring is cross-player (the winner is credited everyone else's rack value), so it can't be
+ *  done per-row in SQL. */
+function toScoreDetails(rows: Score[]): ScoreDetail[] {
+  const parsed = rows.map((r) => ({ ...r, tiles: JSON.parse(r.tiles) as string[] }));
+  const roundScores = computeRoundScores(parsed);
+  return parsed.map((r) => ({ ...r, roundScore: roundScores[r.playerId] ?? 0 }));
+}
 
 /** Adds a new round to a game, auto-numbered as (current max round_number) + 1, with one
  *  score row per entry in `roundScores`. */
@@ -111,7 +130,7 @@ export async function addRound(
       roundScores.map((s) => ({
         roundId,
         playerId: s.playerId,
-        tilesLeftValue: s.tilesLeftValue,
+        tiles: JSON.stringify(s.tiles),
       })),
     );
   }
@@ -128,21 +147,23 @@ export async function updateRoundScores(
   db: Db,
   roundId: string,
   roundScores: RoundScoreInput[],
-): Promise<Score[]> {
+): Promise<ScoreDetail[]> {
   for (const s of roundScores) {
+    const tiles = JSON.stringify(s.tiles);
     await db
       .insert(scores)
-      .values({ roundId, playerId: s.playerId, tilesLeftValue: s.tilesLeftValue })
+      .values({ roundId, playerId: s.playerId, tiles })
       .onConflictDoUpdate({
         target: [scores.roundId, scores.playerId],
-        set: { tilesLeftValue: s.tilesLeftValue },
+        set: { tiles },
       });
   }
   return listRoundScores(db, roundId);
 }
 
-export async function listRoundScores(db: Db, roundId: string): Promise<Score[]> {
-  return db.query.scores.findMany({ where: eq(scores.roundId, roundId) });
+export async function listRoundScores(db: Db, roundId: string): Promise<ScoreDetail[]> {
+  const rows = await db.query.scores.findMany({ where: eq(scores.roundId, roundId) });
+  return toScoreDetails(rows);
 }
 
 export async function getRound(db: Db, roundId: string): Promise<Round | undefined> {
@@ -150,16 +171,17 @@ export async function getRound(db: Db, roundId: string): Promise<Round | undefin
 }
 
 export async function listRounds(db: Db, gameId: string): Promise<RoundWithScores[]> {
-  return db.query.rounds.findMany({
+  const rows = await db.query.rounds.findMany({
     where: eq(rounds.gameId, gameId),
     orderBy: asc(rounds.roundNumber),
     with: { scores: true },
   });
+  return rows.map((round) => ({ ...round, scores: toScoreDetails(round.scores) }));
 }
 
 // ---------------------------------------------------------------------------
-// Running totals — "A player's running total = sum of tiles_left_value across
-// their rounds in a game, computed on read" (docs/spec.md)
+// Running totals — a player's running total is the sum of their computed
+// round scores across a game, computed on read (docs/spec.md).
 // ---------------------------------------------------------------------------
 
 export interface PlayerTotal {
@@ -167,16 +189,19 @@ export interface PlayerTotal {
   total: number;
 }
 
+function sumRoundScores(gamePlayers: Player[], gameRounds: RoundWithScores[]): PlayerTotal[] {
+  const totals = new Map(gamePlayers.map((p) => [p.id, 0]));
+  for (const round of gameRounds) {
+    for (const s of round.scores) {
+      totals.set(s.playerId, (totals.get(s.playerId) ?? 0) + s.roundScore);
+    }
+  }
+  return gamePlayers.map((p) => ({ playerId: p.id, total: totals.get(p.id) ?? 0 }));
+}
+
 export async function getPlayerTotals(db: Db, gameId: string): Promise<PlayerTotal[]> {
-  return db
-    .select({
-      playerId: players.id,
-      total: sql<number>`coalesce(sum(${scores.tilesLeftValue}), 0)`,
-    })
-    .from(players)
-    .leftJoin(scores, eq(scores.playerId, players.id))
-    .where(eq(players.gameId, gameId))
-    .groupBy(players.id);
+  const [gamePlayers, gameRounds] = await Promise.all([listPlayers(db, gameId), listRounds(db, gameId)]);
+  return sumRoundScores(gamePlayers, gameRounds);
 }
 
 // ---------------------------------------------------------------------------
@@ -196,13 +221,9 @@ export async function getGameDetail(db: Db, gameId: string): Promise<GameDetail 
   const game = await getGame(db, gameId);
   if (!game) return undefined;
 
-  const [gamePlayers, gameRounds, totals] = await Promise.all([
-    listPlayers(db, gameId),
-    listRounds(db, gameId),
-    getPlayerTotals(db, gameId),
-  ]);
+  const [gamePlayers, gameRounds] = await Promise.all([listPlayers(db, gameId), listRounds(db, gameId)]);
 
-  return { game, players: gamePlayers, rounds: gameRounds, totals };
+  return { game, players: gamePlayers, rounds: gameRounds, totals: sumRoundScores(gamePlayers, gameRounds) };
 }
 
 // ---------------------------------------------------------------------------

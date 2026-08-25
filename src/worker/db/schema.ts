@@ -1,10 +1,10 @@
 import { relations } from "drizzle-orm";
 import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-// Mirrors migrations/0001_init.sql and 0002_add_game_members.sql field-for-field. Keep in sync by hand — the SQL
-// migration is the source of truth; this file is a typed reflection of it, not the
-// other way around (see drizzle.config.ts for why drizzle-kit doesn't generate
-// migrations in this project).
+// Mirrors migrations/0001_init.sql, 0002_add_game_members.sql, and 0003_tile_based_scoring.sql
+// field-for-field. Keep in sync by hand — the SQL migration is the source of truth; this file is
+// a typed reflection of it, not the other way around (see drizzle.config.ts for why drizzle-kit
+// doesn't generate migrations in this project).
 
 export const games = sqliteTable("games", {
   id: text("id").primaryKey(), // 8-char nanoid
@@ -52,7 +52,9 @@ export const scores = sqliteTable(
     playerId: text("player_id")
       .notNull()
       .references(() => players.id),
-    tilesLeftValue: integer("tiles_left_value").notNull(),
+    // JSON array of remaining-tile tokens, e.g. '["3","5","J"]'; "J" = joker. "[]" = went out
+    // (round winner). Parsed/scored on read — see src/worker/lib/scoring.ts.
+    tiles: text("tiles").notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.roundId, table.playerId] }),
