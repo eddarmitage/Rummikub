@@ -30,6 +30,8 @@ jobs:
         run: envsubst < wrangler.toml.example > wrangler.toml
         env:
           D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
 
       - name: Apply D1 migrations
         run: npx wrangler d1 migrations apply rummikub-scores-db --remote
