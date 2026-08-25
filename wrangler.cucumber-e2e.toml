@@ -1,0 +1,23 @@
+# Wrangler config for the e2e-layer cucumber-js step definitions
+# (tests/cucumber/e2e/), same shape as wrangler.e2e.toml (real assets + API,
+# self-contained, no live Cloudflare account needed). Separate port + database
+# id from wrangler.e2e.toml so this cucumber run's local D1 state never mixes
+# with the Playwright suite's.
+name = "rummikub-scores-cucumber-e2e"
+main = "src/worker/index.ts"
+compatibility_date = "2026-08-19"
+
+[assets]
+directory = "./dist/client"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[vars]
+DEV_AUTH_BYPASS_ENABLED = "true"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rummikub-scores-cucumber-e2e-db"
+database_id = "22222222-2222-2222-2222-222222222222"
+migrations_dir = "migrations"
