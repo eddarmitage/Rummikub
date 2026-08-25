@@ -1,0 +1,32 @@
+{
+  "component": {
+    "paths": ["tests/cucumber/features/**/*.feature"],
+    "import": [
+      "tests/cucumber/support/tsx-register.js",
+      "tests/cucumber/component/dom-setup.ts",
+      "tests/cucumber/component/world.ts",
+      "tests/cucumber/component/hooks.ts",
+      "tests/cucumber/component/steps.ts"
+    ],
+    "tags": "not @no-component",
+    "format": ["progress"]
+  },
+  "integration": {
+    "paths": ["tests/cucumber/features/**/*.feature"],
+    "import": [
+      "tests/cucumber/support/tsx-register.js",
+      "tests/cucumber/integration/**/*.ts"
+    ],
+    "tags": "not @no-integration",
+    "format": ["progress"]
+  },
+  "e2e": {
+    "paths": ["tests/cucumber/features/**/*.feature"],
+    "import": [
+      "tests/cucumber/support/tsx-register.js",
+      "tests/cucumber/e2e/**/*.ts"
+    ],
+    "tags": "not @no-e2e",
+    "format": ["progress"]
+  }
+}

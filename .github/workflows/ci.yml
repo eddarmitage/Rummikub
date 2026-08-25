@@ -33,5 +33,8 @@ jobs:
       - name: Run e2e tests
         run: npm run test:e2e
 
+      - name: Run cucumber scenarios
+        run: npm run test:cucumber
+
       - name: Build
         run: npm run build
