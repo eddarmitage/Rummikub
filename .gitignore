@@ -31,5 +31,8 @@ npm-debug.log*
 .vscode/
 .idea/
 
+# Claude Code local agent state
+.claude/worktrees/
+
 # Ensure migrations are tracked despite global *.sql ignore rules
 !migrations/*.sql
