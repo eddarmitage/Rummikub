@@ -26,12 +26,26 @@ jobs:
       # Real wrangler.toml is gitignored (no committed D1 database_id — see
       # #16 / #10 issue discussion). Regenerate it here the same way
       # scripts/bootstrap.sh does locally, from a repo secret.
+      #
+      # CUSTOM_DOMAIN is optional (see README "Deployment") — when unset, no
+      # [[routes]] block is added and the Worker deploys to *.workers.dev
+      # exactly as before.
       - name: Generate wrangler.toml
-        run: envsubst < wrangler.toml.example > wrangler.toml
+        run: |
+          envsubst < wrangler.toml.example > wrangler.toml
+          if [ -n "$CUSTOM_DOMAIN" ]; then
+            cat <<EOF >> wrangler.toml
+
+          [[routes]]
+          pattern = "$CUSTOM_DOMAIN"
+          custom_domain = true
+          EOF
+          fi
         env:
           D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
           ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
           ACCESS_AUD: ${{ vars.ACCESS_AUD }}
+          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
 
       - name: Apply D1 migrations
         run: npx wrangler d1 migrations apply rummikub-scores-db --remote
