@@ -47,7 +47,22 @@ else
 fi
 
 echo "==> Generating $OUTPUT from $TEMPLATE..."
-D1_DATABASE_ID="$DB_ID" envsubst < "$TEMPLATE" > "$OUTPUT"
+# ACCESS_TEAM_DOMAIN / ACCESS_AUD aren't provisionable via the wrangler CLI like the D1 id
+# is — export them yourself before running this script if you already have them (Zero Trust
+# dashboard: team domain from Settings, AUD tag from the self-hosted Access Application's
+# Overview tab), otherwise they're left blank here and requireAuth() falls back to rejecting
+# every request until you fill them in on the generated wrangler.toml (see README "Auth
+# setup").
+D1_DATABASE_ID="$DB_ID" \
+ACCESS_TEAM_DOMAIN="${ACCESS_TEAM_DOMAIN:-}" \
+ACCESS_AUD="${ACCESS_AUD:-}" \
+envsubst < "$TEMPLATE" > "$OUTPUT"
+
+if [ -z "${ACCESS_TEAM_DOMAIN:-}" ] || [ -z "${ACCESS_AUD:-}" ]; then
+  echo "==> Note: ACCESS_TEAM_DOMAIN and/or ACCESS_AUD weren't set — '$OUTPUT' has blank"
+  echo "    placeholders for them. Fill those in once you've set up the self-hosted Access"
+  echo "    Application (README 'Auth setup'); writes will 401 until you do."
+fi
 
 echo "==> Applying migrations (local, for 'wrangler dev' / Miniflare)..."
 npx wrangler d1 migrations apply "$DB_NAME" --local
