@@ -22,7 +22,7 @@ async function playRound(view: RenderResult, table: DataTable) {
   const user = userEvent.setup({ document });
   await user.click(await view.findByRole("button", { name: "+ Add round" }));
   for (const row of table.hashes()) {
-    if (row.tiles === "") continue; // input already starts blank ("went out") — nothing to type
+    if (row.tiles === "") continue; // input already starts blank ("winner") — nothing to type
     await user.type(await view.findByLabelText(row.player), row.tiles);
   }
   await user.click(view.getByRole("button", { name: "Save round" }));
@@ -61,6 +61,18 @@ Then("the score should show:", function (this: ComponentWorld, table: DataTable)
     assert.equal(Number(cells[index + 1].textContent), Number(row.total), `expected ${row.player} total ${row.total}`);
   }
 });
+
+Then(
+  "the rack for {string} in round {int} should show {string}",
+  function (this: ComponentWorld, playerName: string, roundNumber: number, expected: string) {
+    const headers = [...document.querySelectorAll("thead th")].map((th) => th.textContent);
+    const index = headers.indexOf(playerName);
+    const row = document.querySelectorAll("tbody tr")[roundNumber - 1];
+    const cell = row.querySelectorAll("td")[index];
+    const tilesText = cell.querySelector(".round-score-tiles")?.textContent;
+    assert.equal(tilesText, expected, `expected ${playerName}'s round ${roundNumber} rack to show "${expected}"`);
+  },
+);
 
 Then("they should be redirected to sign in", function () {
   assert.match(window.location.href, /^\/api\/auth\/login/);

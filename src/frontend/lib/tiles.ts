@@ -39,3 +39,14 @@ export function tileValue(tile: string): number {
 export function rackValue(tiles: string[]): number {
   return tiles.reduce((sum, tile) => sum + tileValue(tile), 0);
 }
+
+function compareTiles(a: string, b: string): number {
+  if (a === "J" || b === "J") return a === b ? 0 : a === "J" ? 1 : -1;
+  return Number(a) - Number(b);
+}
+
+/** Returns a player's rack sorted for display: numeric tiles ascending, jokers last. Used by the
+ *  scorecard table (Game.tsx) — doesn't mutate the input. */
+export function sortTiles(tiles: string[]): string[] {
+  return [...tiles].sort(compareTiles);
+}
