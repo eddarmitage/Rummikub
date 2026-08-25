@@ -154,4 +154,60 @@ describe("POST /api/games/:id/players", () => {
     const json = (await res.json()) as ApiErrorBody;
     expect(json.error.code).toBe("VALIDATION_ERROR");
   });
+
+  it("400s with VALIDATION_ERROR for a name that duplicates an existing player in the game", async () => {
+    const game = await createGame();
+    await worker.fetch(`${GAMES_URL}/${game.id}/players`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ name: "Alice" }),
+    });
+
+    const res = await worker.fetch(`${GAMES_URL}/${game.id}/players`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ name: "Alice" }),
+    });
+
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as ApiErrorBody;
+    expect(json.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("treats duplicate names as case-insensitive and post-trim", async () => {
+    const game = await createGame();
+    await worker.fetch(`${GAMES_URL}/${game.id}/players`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ name: "Bob" }),
+    });
+
+    const res = await worker.fetch(`${GAMES_URL}/${game.id}/players`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ name: "  bob  " }),
+    });
+
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as ApiErrorBody;
+    expect(json.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("allows the same name in a different game", async () => {
+    const gameOne = await createGame();
+    const gameTwo = await createGame();
+    await worker.fetch(`${GAMES_URL}/${gameOne.id}/players`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ name: "Alice" }),
+    });
+
+    const res = await worker.fetch(`${GAMES_URL}/${gameTwo.id}/players`, {
+      method: "POST",
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ name: "Alice" }),
+    });
+
+    expect(res.status).toBe(201);
+  });
 });

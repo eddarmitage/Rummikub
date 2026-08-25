@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { addPlayer, createDb, createGame, ensureGameMember, getGame, getGameDetail } from "../db/queries";
+import { addPlayer, createDb, createGame, ensureGameMember, getGame, getGameDetail, listPlayers } from "../db/queries";
 import { errorResponse, parseBody } from "../lib/http";
 import { requireAuth, type AuthVariables } from "../middleware/auth";
 import { rounds } from "./rounds";
@@ -44,6 +44,14 @@ games.post("/:id/players", requireAuth(), async (c) => {
 
   const body = await parseBody(c, addPlayerSchema);
   if (!body.ok) return body.response;
+
+  const existingPlayers = await listPlayers(db, gameId);
+  const nameTaken = existingPlayers.some(
+    (p) => p.name.toLowerCase() === body.data.name.toLowerCase(),
+  );
+  if (nameTaken) {
+    return errorResponse(c, 400, "VALIDATION_ERROR", "A player with that name already exists in this game.");
+  }
 
   const player = await addPlayer(db, { gameId, name: body.data.name, sortOrder: body.data.sortOrder });
   await ensureGameMember(db, { gameId, userId: c.get("user").id, role: "editor" });
