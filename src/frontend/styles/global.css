@@ -285,6 +285,15 @@ input[type="number"]:focus {
   font-weight: 400;
 }
 
+.winner-pill {
+  display: inline-block;
+  background: var(--color-badge-active-bg);
+  color: var(--color-badge-active-text);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-weight: 600;
+}
+
 .error {
   color: var(--color-error);
   font-size: 0.9rem;

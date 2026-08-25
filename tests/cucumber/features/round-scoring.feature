@@ -96,3 +96,20 @@ Feature: Round scoring
       | Alice  | 8     |
       | Bob    | -14   |
       | Carol  | -10   |
+
+  # Tile order/labelling is a UI-only rendering concern (Game.tsx) with no server-side equivalent
+  # to check against, so this scenario is excluded from the integration layer with
+  # @no-integration -- unlike the scoring scenarios above, there's no API response for a bare
+  # HTTP layer to inspect.
+  @no-integration
+  Scenario: A round's rack is shown sorted with jokers last, and the winner's rack reads "winner"
+    Given a game with players:
+      | name  |
+      | Alice |
+      | Bob   |
+    When round 1 is played:
+      | player | tiles         |
+      | Alice  | 9 3 J 12 J 5  |
+      | Bob    |               |
+    Then the rack for "Alice" in round 1 should show "3 5 9 12 J J"
+    And the rack for "Bob" in round 1 should show "winner"

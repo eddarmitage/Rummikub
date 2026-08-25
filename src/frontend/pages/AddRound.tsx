@@ -85,7 +85,7 @@ export function AddRound({ gameId, players, roundNumber, onClose, onSaved }: Add
                   <input
                     type="text"
                     inputMode="text"
-                    placeholder="went out"
+                    placeholder="winner"
                     value={values[p.id] ?? ""}
                     onChange={(e) => setValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
                   />

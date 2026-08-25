@@ -59,6 +59,17 @@ Then("the score should show:", async function (this: E2EWorld, table: DataTable)
   }
 });
 
+Then(
+  "the rack for {string} in round {int} should show {string}",
+  async function (this: E2EWorld, playerName: string, roundNumber: number, expected: string) {
+    const headers = await this.page.locator("thead th").allTextContents();
+    const index = headers.indexOf(playerName);
+    const row = this.page.locator("tbody tr").nth(roundNumber - 1);
+    const tilesText = await row.locator("td").nth(index).locator(".round-score-tiles").textContent();
+    assert.equal(tilesText, expected, `expected ${playerName}'s round ${roundNumber} rack to show "${expected}"`);
+  },
+);
+
 Then("they should be redirected to sign in", async function (this: E2EWorld) {
   await this.anonymousPage!.waitForURL(/\/api\/auth\/login/);
 });

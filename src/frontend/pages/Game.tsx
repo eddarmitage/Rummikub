@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AddRound } from "./AddRound";
 import { apiGet, ApiRequestError } from "../lib/api";
 import { signIn } from "../lib/auth";
+import { sortTiles } from "../lib/tiles";
 import type { GameDetail } from "../lib/types";
 
 function formatSigned(n: number): string {
@@ -117,7 +118,11 @@ export function Game({ gameId }: { gameId: string }) {
                           <td key={p.id}>
                             <div className="round-score">{formatSigned(score.roundScore)}</div>
                             <div className="round-score-tiles">
-                              {score.tiles.length > 0 ? score.tiles.join(" ") : "went out"}
+                              {score.tiles.length > 0 ? (
+                                sortTiles(score.tiles).join(" ")
+                              ) : (
+                                <span className="winner-pill">winner</span>
+                              )}
                             </div>
                           </td>
                         );
