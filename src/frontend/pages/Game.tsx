@@ -118,7 +118,11 @@ export function Game({ gameId }: { gameId: string }) {
                           <td key={p.id}>
                             <div className="round-score">{formatSigned(score.roundScore)}</div>
                             <div className="round-score-tiles">
-                              {score.tiles.length > 0 ? sortTiles(score.tiles).join(" ") : "winner"}
+                              {score.tiles.length > 0 ? (
+                                sortTiles(score.tiles).join(" ")
+                              ) : (
+                                <span className="winner-pill">winner</span>
+                              )}
                             </div>
                           </td>
                         );
