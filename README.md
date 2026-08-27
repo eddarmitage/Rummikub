@@ -153,6 +153,29 @@ DEV_AUTH_BYPASS_ENABLED=true
 then send `X-Dev-User-Email: <any-email>` on write requests instead of authenticating via a
 real Access session.
 
+## Docker (self-hosted, no-auth)
+
+For running your own instance without a Cloudflare account or Access — e.g. to score games with
+friends on your own network. No login: every request is stamped with a single fixed local user,
+so this is meant for one trusted group sharing an instance, not a multi-tenant deployment.
+
+```
+docker compose up
+```
+
+Then open `http://localhost:8080`. Data is written to a local SQLite file in the `rummikub-data`
+Docker volume, so it survives container restarts and rebuilds; remove the volume
+(`docker compose down -v`) to start fresh.
+
+Architecture-wise, this doesn't run `wrangler dev` or need workerd at all: `src/standalone/server.ts`
+is a small Node harness (`@hono/node-server`) that serves the *same* Hono app and routes
+(`src/worker/index.ts`, `src/worker/routes/`, `src/worker/db/queries.ts`) the Cloudflare Worker
+does. The only thing it swaps out is the `DB` binding — `src/standalone/sqlite-d1.ts` is a small
+shim implementing the `D1Database` interface over a plain SQLite file (via Node's built-in
+`node:sqlite`), and `src/standalone/migrate.ts` applies `migrations/*.sql` to it directly. Identity
+reuses `requireAuth()`'s existing `X-Dev-User-Email` dev-bypass header (see above) rather than any
+new auth code.
+
 ## Deployment
 
 GitHub Actions builds, tests, applies D1 migrations, and deploys the Worker on every push to `main`.

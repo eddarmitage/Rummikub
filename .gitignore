@@ -12,6 +12,9 @@ drizzle/
 .dev.vars.*
 wrangler.toml
 
+# Standalone Docker harness's local SQLite data (src/standalone/server.ts default DATA_DIR)
+/data/
+
 # Env
 .env
 .env.local

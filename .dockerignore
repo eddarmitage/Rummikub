@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+drizzle
+.wrangler
+.dev.vars
+.dev.vars.*
+wrangler.toml
+.env
+.env.local
+.env.*.local
+data
+test-results
+tests
+.git
+.claude

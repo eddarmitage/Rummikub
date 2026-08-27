@@ -1,0 +1,10 @@
+services:
+  rummikub-scores:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - rummikub-data:/data
+
+volumes:
+  rummikub-data:
