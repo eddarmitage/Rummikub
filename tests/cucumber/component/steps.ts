@@ -17,7 +17,7 @@ Given("a game with players:", function (this: ComponentWorld, table: DataTable) 
   this.players = table.rows().flat().map((name, i) => ({ id: `p${i + 1}`, gameId: this.gameId, name, sortOrder: i }));
 });
 
-async function playRound(view: RenderResult, table: DataTable) {
+async function fillRound(view: RenderResult, table: DataTable) {
   // Pass `document` explicitly rather than relying on userEvent's default options — those
   // capture `globalThis.document` once at this module's import time (see setup.js's
   // `defaultOptionsDirect`), before hooks.ts has installed this scenario's jsdom globals.
@@ -27,7 +27,11 @@ async function playRound(view: RenderResult, table: DataTable) {
     if (row.tiles === "") continue; // input already starts blank ("winner") — nothing to type
     await user.type(await view.findByLabelText(row.player), row.tiles);
   }
-  await user.click(view.getByRole("button", { name: "Save round" }));
+}
+
+async function playRound(view: RenderResult, table: DataTable) {
+  await fillRound(view, table);
+  await userEvent.setup({ document }).click(view.getByRole("button", { name: "Save round" }));
 }
 
 When("round {int} is played:", async function (this: ComponentWorld, _roundNumber: number, table: DataTable) {
@@ -44,6 +48,27 @@ When("round {int} is played:", async function (this: ComponentWorld, _roundNumbe
   // resolves) — wait for the round to actually land before the Then step reads totals.
   await waitFor(() => assert.equal(document.querySelectorAll("tbody tr").length, roundsBefore + 1));
 });
+
+When("round {int} is attempted:", async function (this: ComponentWorld, _roundNumber: number, table: DataTable) {
+  if (!this.view) {
+    this.view = render(createElement(Game, { gameId: this.gameId }));
+    await this.view.findByRole("button", { name: "+ Add round" }); // wait for the initial GET
+  }
+  await fillRound(this.view, table);
+});
+
+Then("the round should be rejected", async function (this: ComponentWorld) {
+  const saveButton = await this.view!.findByRole("button", { name: "Save round" });
+  assert.equal((saveButton as HTMLButtonElement).disabled, true, "expected the Save round button to be disabled");
+});
+
+Then(
+  "the Add Round modal should show the hint {string}",
+  async function (this: ComponentWorld, hint: string) {
+    const hintEl = await this.view!.findByText(hint);
+    assert.ok(hintEl, `expected the hint "${hint}" to be shown`);
+  },
+);
 
 When(
   "an anonymous visitor tries to play round {int}:",

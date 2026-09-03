@@ -34,4 +34,10 @@ export const roundScoresSchema = z
   .refine((body) => new Set(body.scores.map((s) => s.playerId)).size === body.scores.length, {
     message: "Duplicate playerId in scores.",
     path: ["scores"],
+  })
+  // A real round has exactly one player who goes out (empty rack); with fewer than two score
+  // rows there's no one else to compare against, so that degenerate case is left unchecked.
+  .refine((body) => body.scores.length <= 1 || body.scores.filter((s) => s.tiles.length === 0).length === 1, {
+    message: "Exactly one player must have an empty rack — the player who went out.",
+    path: ["scores"],
   });

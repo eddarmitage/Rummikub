@@ -19,9 +19,12 @@ export interface RoundEntry {
   tiles: string[];
 }
 
-/** Maps each entry's playerId to their round score. A tie for fewest tiles (nobody went out)
- *  has no defined tie-break in the rules, so no round bonus is awarded that round — every
- *  player is simply debited their own rack value. */
+/** Maps each entry's playerId to their round score. A real round has exactly one player who
+ *  goes out (empty rack) — roundScoreSchema (src/worker/routes/schemas.ts) rejects any request
+ *  with zero or multiple empty racks before it reaches here, so "fewest tiles" and "empty rack"
+ *  always pick the same winner. The no-winner/tied-winner branch below is unreachable through
+ *  the API; it stays as a defensive fallback (debit everyone their own rack value, no bonus) for
+ *  direct callers, such as this file's own unit tests, that skip that validation. */
 export function computeRoundScores(entries: RoundEntry[]): Record<string, number> {
   const values = entries.map((e) => ({ playerId: e.playerId, value: rackValue(e.tiles), count: e.tiles.length }));
   const minCount = Math.min(...values.map((v) => v.count));

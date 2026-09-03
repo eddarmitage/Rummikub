@@ -19,7 +19,9 @@ interface AddRoundProps {
  *
  * Each player's remaining rack is entered as free text (e.g. "3 5 8 J 12"; leave blank if they
  * went out) — the server computes the actual round score from these tiles per official
- * Rummikub rules (src/worker/lib/scoring.ts).
+ * Rummikub rules (src/worker/lib/scoring.ts). Exactly one player must go out per round (#50),
+ * so submission is blocked — same treatment as an invalid tile token — unless exactly one rack
+ * is blank; roundScoresSchema (src/worker/routes/schemas.ts) enforces the same rule server-side.
  */
 export function AddRound({ gameId, players, roundNumber, onClose, onSaved }: AddRoundProps) {
   const [values, setValues] = useState<Record<string, string>>({});
@@ -41,10 +43,18 @@ export function AddRound({ gameId, players, roundNumber, onClose, onSaved }: Add
   }, [players, values]);
 
   const hasInvalidRow = [...parsedByPlayer.values()].some((parsed) => !parsed.ok);
+  const goneOutCount = [...parsedByPlayer.values()].filter((parsed) => parsed.ok && parsed.tiles.length === 0).length;
+  const winnerHint = hasInvalidRow
+    ? null
+    : goneOutCount === 0
+      ? "Exactly one player must go out — leave their rack blank to end the round."
+      : goneOutCount > 1
+        ? "Only one player can go out — leave just one rack blank."
+        : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (hasInvalidRow) return;
+    if (hasInvalidRow || goneOutCount !== 1) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -103,9 +113,11 @@ export function AddRound({ gameId, players, roundNumber, onClose, onSaved }: Add
             );
           })}
 
+          {winnerHint && <p className="tile-hint tile-hint-error">{winnerHint}</p>}
+
           {error && <p className="error">{error}</p>}
 
-          <button type="submit" className="button-primary" disabled={submitting || hasInvalidRow}>
+          <button type="submit" className="button-primary" disabled={submitting || hasInvalidRow || goneOutCount !== 1}>
             Save round
           </button>
         </form>
