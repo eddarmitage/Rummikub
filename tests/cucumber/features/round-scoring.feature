@@ -75,27 +75,49 @@ Feature: Round scoring
       | Bob    | 68    |
       | Carol  | -49   |
 
-  Scenario: Tied fewest-tiles round (no bonus) followed by an outright win
+  # A real round has exactly one player who goes out (empty rack) -- #50. Both layers that touch
+  # real player input reject anything else: the Add Round modal blocks the "Save round" button
+  # client-side (src/frontend/pages/AddRound.tsx), and roundScoresSchema rejects it server-side
+  # (src/worker/routes/schemas.ts) as defense in depth for any other caller of the API.
+  Scenario: A round with no winner is rejected
     Given a game with players:
       | name  |
       | Alice |
       | Bob   |
       | Carol |
-    When round 1 is played:
+    When round 1 is attempted:
       | player | tiles |
       | Alice  | 5     |
       | Bob    | 5     |
       | Carol  | 1 2 3 |
-    And round 2 is played:
+    Then the round should be rejected
+
+  Scenario: A round with more than one winner is rejected
+    Given a game with players:
+      | name  |
+      | Alice |
+      | Bob   |
+      | Carol |
+    When round 1 is attempted:
       | player | tiles |
       | Alice  |       |
-      | Bob    | 9     |
+      | Bob    |       |
       | Carol  | 4     |
-    Then the score should show:
-      | player | total |
-      | Alice  | 8     |
-      | Bob    | -14   |
-      | Carol  | -10   |
+    Then the round should be rejected
+
+  # The Add Round modal's hint text is a UI-only concern with no server equivalent to check
+  # against -- same reasoning as the sorted-rack scenario below -- so this is @no-integration.
+  @no-integration
+  Scenario: The Add Round modal explains why a no-winner submission is blocked
+    Given a game with players:
+      | name  |
+      | Alice |
+      | Bob   |
+    When round 1 is attempted:
+      | player | tiles |
+      | Alice  | 1     |
+      | Bob    | 5     |
+    Then the Add Round modal should show the hint "Exactly one player must go out — leave their rack blank to end the round."
 
   # Tile order/labelling is a UI-only rendering concern (Game.tsx) with no server-side equivalent
   # to check against, so this scenario is excluded from the integration layer with

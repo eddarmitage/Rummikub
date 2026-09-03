@@ -1,5 +1,5 @@
 import { Given, Then, When, type DataTable } from "@cucumber/cucumber";
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
 import { BASE_URL } from "./hooks";
 import type { E2EWorld } from "./world";
@@ -23,11 +23,15 @@ Given("a game with players:", async function (this: E2EWorld, table: DataTable) 
   this.gameUrl = this.page.url();
 });
 
-async function fillAndSaveRound(page: Page, table: DataTable): Promise<void> {
+async function fillRound(page: Page, table: DataTable): Promise<void> {
   await page.getByRole("button", { name: "+ Add round" }).click();
   for (const row of table.hashes()) {
     await page.getByLabel(row.player).fill(row.tiles);
   }
+}
+
+async function fillAndSaveRound(page: Page, table: DataTable): Promise<void> {
+  await fillRound(page, table);
   await page.getByRole("button", { name: "Save round" }).click();
 }
 
@@ -38,6 +42,18 @@ When("round {int} is played:", async function (this: E2EWorld, _roundNumber: num
   // repopulates the scorecard, so wait for the round row itself rather than just the modal
   // disappearing (same race the component layer's steps.ts hits too).
   await this.page.locator("tbody tr").nth(roundsBefore).waitFor();
+});
+
+When("round {int} is attempted:", async function (this: E2EWorld, _roundNumber: number, table: DataTable) {
+  await fillRound(this.page, table);
+});
+
+Then("the round should be rejected", async function (this: E2EWorld) {
+  await expect(this.page.getByRole("button", { name: "Save round" })).toBeDisabled();
+});
+
+Then("the Add Round modal should show the hint {string}", async function (this: E2EWorld, hint: string) {
+  await expect(this.page.getByText(hint)).toBeVisible();
 });
 
 When(

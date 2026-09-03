@@ -110,4 +110,36 @@ describe("roundScoresSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects a round where nobody's rack is empty", () => {
+    const result = roundScoresSchema.safeParse({
+      scores: [
+        { playerId: "p1", tiles: ["5"] },
+        { playerId: "p2", tiles: ["1", "2", "3"] },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a round where more than one rack is empty", () => {
+    const result = roundScoresSchema.safeParse({
+      scores: [
+        { playerId: "p1", tiles: [] },
+        { playerId: "p2", tiles: [] },
+        { playerId: "p3", tiles: ["4"] },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a round with two or more players where exactly one rack is empty", () => {
+    const result = roundScoresSchema.safeParse({
+      scores: [
+        { playerId: "p1", tiles: [] },
+        { playerId: "p2", tiles: ["5"] },
+        { playerId: "p3", tiles: ["1", "2"] },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
 });

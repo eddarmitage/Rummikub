@@ -23,7 +23,7 @@ describe("rackValue", () => {
 });
 
 describe("computeRoundScores", () => {
-  it("credits the sole player with the fewest tiles the sum of everyone else's rack value", () => {
+  it("credits the sole player who went out (empty rack) the sum of everyone else's rack value", () => {
     // Mirrors the Wikipedia example: A goes out, B/C/D hold racks worth 5/10/3.
     const scores = computeRoundScores([
       { playerId: "a", tiles: [] },
@@ -44,6 +44,10 @@ describe("computeRoundScores", () => {
     expect(scores).toEqual({ a: 30, b: -30 });
   });
 
+  // roundScoresSchema (src/worker/routes/schemas.ts) rejects any request that doesn't have
+  // exactly one empty rack before it reaches computeRoundScores(), so a "winner" who has the
+  // fewest tiles but hasn't actually gone out (#50) is unreachable via the API. These two cases
+  // stay covered here as a defensive fallback for direct callers that skip that validation.
   it("uses fewest tiles remaining, not lowest rack value, to determine the winner", () => {
     // b has fewer tiles (1) but a higher rack value than a's two tiles.
     const scores = computeRoundScores([

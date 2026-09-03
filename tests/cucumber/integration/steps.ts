@@ -39,6 +39,24 @@ When("round {int} is played:", async function (this: IntegrationWorld, _roundNum
   assert.equal(res.status, 201, `round save failed: ${await res.text()}`);
 });
 
+When("round {int} is attempted:", async function (this: IntegrationWorld, _roundNumber: number, table: DataTable) {
+  const scores = table.hashes().map((row) => ({
+    playerId: this.playerIdByName.get(row.player),
+    tiles: row.tiles.trim() === "" ? [] : row.tiles.trim().split(/\s+/),
+  }));
+
+  this.lastRoundResponse = await fetch(`${BASE_URL}/games/${this.gameId}/rounds`, {
+    method: "POST",
+    headers: AUTH_HEADERS,
+    body: JSON.stringify({ scores }),
+  });
+});
+
+Then("the round should be rejected", async function (this: IntegrationWorld) {
+  assert.ok(this.lastRoundResponse, "no round POST captured — was 'round N is attempted:' run first?");
+  assert.equal(this.lastRoundResponse!.status, 400, `round save unexpectedly succeeded: ${await this.lastRoundResponse!.text()}`);
+});
+
 When("I try to create a game with players:", async function (this: IntegrationWorld, table: DataTable) {
   const gameRes = await fetch(`${BASE_URL}/games/new`, {
     method: "POST",
