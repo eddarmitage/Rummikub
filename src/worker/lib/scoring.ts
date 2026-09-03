@@ -1,18 +1,13 @@
 // Rummikub round scoring per the official rules (https://en.wikipedia.org/wiki/Rummikub#Scoring):
 // the player(s) with the fewest tiles left "win" the round and are credited the sum of every
 // other player's rack value; everyone else is debited their own rack value. Tile tokens are
-// "1".."13" for numbered tiles or "J" for a joker (worth 30) — already validated/normalized by
-// roundScoreSchema (src/worker/routes/schemas.ts) by the time they reach here.
+// "1".."13" for numbered tiles or "J" for a joker (worth 30, src/shared/lib/tiles.ts) — already
+// validated/normalized by roundScoreSchema (src/worker/routes/schemas.ts) by the time they reach
+// here.
 
-export const JOKER_VALUE = 30;
+import { rackValue, tileValue } from "../../shared/lib/tiles";
 
-export function tileValue(tile: string): number {
-  return tile === "J" ? JOKER_VALUE : Number(tile);
-}
-
-export function rackValue(tiles: string[]): number {
-  return tiles.reduce((sum, tile) => sum + tileValue(tile), 0);
-}
+export { rackValue, tileValue };
 
 export interface RoundEntry {
   playerId: string;

@@ -42,7 +42,7 @@ React Testing Library + Playwright + cucumber-js (tests).
 │   │   ├── pages/
 │   │   └── styles/
 │   └── shared/               # Pure, dependency-free logic used by both worker and frontend
-│       └── lib/                 # (e.g. isDuplicatePlayerName) -- neither side imports the other's code
+│       └── lib/                 # (e.g. isDuplicatePlayerName, tiles.ts) -- neither side imports the other's code
 ├── migrations/                 # D1 SQL migrations
 ├── scripts/
 │   └── seed.ts                 # populates local D1 with a fake game for dev/e2e
