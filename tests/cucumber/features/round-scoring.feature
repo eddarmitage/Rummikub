@@ -97,6 +97,27 @@ Feature: Round scoring
       | Alice  | 9     |
       | Bob    | -9    |
 
+  # Only the most recently played round is editable (#52): tiles get reshuffled and redrawn each
+  # round, so once a later round has been played there's no rack left to check an earlier round's
+  # entry against. This restriction is purely a Scorecard rendering rule (Game.tsx) -- the PATCH
+  # route itself has no such limit -- so it's excluded from the integration layer.
+  @no-integration
+  Scenario: Only the most recently played round can be edited
+    Given a game with players:
+      | name  |
+      | Alice |
+      | Bob   |
+    When round 1 is played:
+      | player | tiles |
+      | Alice  | 5     |
+      | Bob    |       |
+    And round 2 is played:
+      | player | tiles |
+      | Alice  |       |
+      | Bob    | 3     |
+    Then round 1 should not be editable
+    And round 2 should be editable
+
   # A real round has exactly one player who goes out (empty rack) -- #50. Both layers that touch
   # real player input reject anything else: the Add Round modal blocks the "Save round" button
   # client-side (src/frontend/pages/AddRound.tsx), and roundScoresSchema rejects it server-side

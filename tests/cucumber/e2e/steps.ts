@@ -59,6 +59,14 @@ When("round {int} is edited to:", async function (this: E2EWorld, roundNumber: n
   await expect(this.page.getByRole("button", { name: "Save round" })).toBeHidden();
 });
 
+Then("round {int} should be editable", async function (this: E2EWorld, roundNumber: number) {
+  await expect(this.page.getByRole("button", { name: `Edit round ${roundNumber}` })).toBeVisible();
+});
+
+Then("round {int} should not be editable", async function (this: E2EWorld, roundNumber: number) {
+  await expect(this.page.getByRole("button", { name: `Edit round ${roundNumber}` })).toHaveCount(0);
+});
+
 Then("the round should be rejected", async function (this: E2EWorld) {
   await expect(this.page.getByRole("button", { name: "Save round" })).toBeDisabled();
 });

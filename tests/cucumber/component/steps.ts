@@ -78,6 +78,21 @@ When("round {int} is edited to:", async function (this: ComponentWorld, roundNum
   await waitFor(() => assert.equal(document.querySelector(".modal-backdrop"), null));
 });
 
+Then(
+  "round {int} should be editable",
+  async function (this: ComponentWorld, roundNumber: number) {
+    await this.view!.findByRole("button", { name: `Edit round ${roundNumber}` });
+  },
+);
+
+Then(
+  "round {int} should not be editable",
+  function (this: ComponentWorld, roundNumber: number) {
+    const button = this.view!.queryByRole("button", { name: `Edit round ${roundNumber}` });
+    assert.equal(button, null, `expected no edit button for round ${roundNumber}`);
+  },
+);
+
 Then("the round should be rejected", async function (this: ComponentWorld) {
   const saveButton = await this.view!.findByRole("button", { name: "Save round" });
   assert.equal((saveButton as HTMLButtonElement).disabled, true, "expected the Save round button to be disabled");

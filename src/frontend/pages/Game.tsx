@@ -22,6 +22,10 @@ function formatStartTime(iso: string): string {
  * sees this exact screen, no visual difference between authenticated and anonymous viewers
  * (issue #7). The write actions — adding a round, and editing a previously-saved one (#52) —
  * both live in the AddRound modal (#8), the latter pre-populated via the round's edit button.
+ *
+ * Only the most recently played round gets an edit button, and only while the game is still
+ * active: tiles get reshuffled and redrawn each round, so once a later round has been played
+ * there's no rack left to check an earlier one's entry against.
  */
 export function Game({ gameId }: { gameId: string }) {
   const [detail, setDetail] = useState<GameDetail | null>(null);
@@ -108,20 +112,23 @@ export function Game({ gameId }: { gameId: string }) {
                 </tr>
               </thead>
               <tbody>
-                {rounds.map((round) => {
+                {rounds.map((round, index) => {
                   const scoresByPlayer = new Map(round.scores.map((s) => [s.playerId, s]));
+                  const isEditable = game.status === "active" && index === rounds.length - 1;
                   return (
                     <tr key={round.id}>
                       <td className="round-number">
                         {round.roundNumber}
-                        <button
-                          type="button"
-                          className="icon-button round-edit-button"
-                          aria-label={`Edit round ${round.roundNumber}`}
-                          onClick={() => setEditingRound(round)}
-                        >
-                          ✎
-                        </button>
+                        {isEditable && (
+                          <button
+                            type="button"
+                            className="icon-button round-edit-button"
+                            aria-label={`Edit round ${round.roundNumber}`}
+                            onClick={() => setEditingRound(round)}
+                          >
+                            ✎
+                          </button>
+                        )}
                       </td>
                       {players.map((p) => {
                         const score = scoresByPlayer.get(p.id);
