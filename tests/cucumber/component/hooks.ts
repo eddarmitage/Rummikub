@@ -1,6 +1,6 @@
 import { After, Before } from "@cucumber/cucumber";
 import { cleanup } from "@testing-library/react";
-import { isDuplicatePlayerName } from "../../../src/worker/lib/players";
+import { isDuplicatePlayerName } from "../../../src/shared/lib/players";
 import { computeRoundScores } from "../../../src/worker/lib/scoring";
 import { fakeLocation } from "./dom-setup";
 import type { ComponentWorld } from "./world";

@@ -1,7 +1,7 @@
 Feature: Duplicate player names
 
   Player names must be unique within a game, case-insensitive and post-trim (#31,
-  src/worker/lib/players.ts). The rejection itself is a real API contract, so -- same as
+  src/shared/lib/players.ts). The rejection itself is a real API contract, so -- same as
   round-scoring.feature -- the integration layer verifies it for real (workerd + D1) via raw
   HTTP, not a separate Vitest test: there's no second hand-written implementation of the check
   for a dedicated test to guard against drifting, and the component layer's stubbed fetch

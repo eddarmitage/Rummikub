@@ -37,10 +37,12 @@ React Testing Library + Playwright + cucumber-js (tests).
 │   │   └── db/
 │   │       ├── schema.ts     # Drizzle schema
 │   │       └── queries.ts
-│   └── frontend/
-│       ├── main.tsx
-│       ├── pages/
-│       └── styles/
+│   ├── frontend/
+│   │   ├── main.tsx
+│   │   ├── pages/
+│   │   └── styles/
+│   └── shared/               # Pure, dependency-free logic used by both worker and frontend
+│       └── lib/                 # (e.g. isDuplicatePlayerName) -- neither side imports the other's code
 ├── migrations/                 # D1 SQL migrations
 ├── scripts/
 │   └── seed.ts                 # populates local D1 with a fake game for dev/e2e

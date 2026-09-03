@@ -2,7 +2,7 @@ import { useState } from "react";
 import { apiPost } from "../lib/api";
 import { isUnauthenticatedError, signIn } from "../lib/auth";
 import type { Game, Player } from "../lib/types";
-import { isDuplicatePlayerName } from "../../worker/lib/players";
+import { isDuplicatePlayerName } from "../../shared/lib/players";
 
 const MIN_PLAYERS = 2;
 
