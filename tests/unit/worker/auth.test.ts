@@ -1,6 +1,7 @@
 import { exportJWK, generateKeyPair, SignJWT, type JWK } from "jose";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { verifyAccessJwt } from "../../../src/worker/middleware/auth";
+import { sanitizeReturnTo } from "../../../src/worker/routes/returnTo";
 
 const AUD = "test-application-aud-tag";
 const KID = "test-key";
@@ -115,5 +116,34 @@ describe("verifyAccessJwt", () => {
     await expect(
       verifyAccessJwt("not-a-jwt", { ACCESS_TEAM_DOMAIN: teamDomain, ACCESS_AUD: AUD }),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("sanitizeReturnTo", () => {
+  it("passes through a same-origin path", () => {
+    expect(sanitizeReturnTo("/games/123")).toBe("/games/123");
+  });
+
+  it("falls back to / for an empty or root-relative-only value", () => {
+    expect(sanitizeReturnTo("")).toBe("/");
+    expect(sanitizeReturnTo("/")).toBe("/");
+  });
+
+  it("rejects an absolute URL to another origin", () => {
+    expect(sanitizeReturnTo("https://evil.com")).toBe("/");
+    expect(sanitizeReturnTo("http://evil.com/path")).toBe("/");
+  });
+
+  it("rejects a protocol-relative //evil.com redirect", () => {
+    expect(sanitizeReturnTo("//evil.com")).toBe("/");
+    expect(sanitizeReturnTo("//evil.com/path")).toBe("/");
+  });
+
+  it("rejects backslash variants that browsers normalise to //evil.com", () => {
+    expect(sanitizeReturnTo("/\\evil.com")).toBe("/");
+    expect(sanitizeReturnTo("/\\/evil.com")).toBe("/");
+    expect(sanitizeReturnTo("\\\\evil.com")).toBe("/");
+    expect(sanitizeReturnTo("\\/evil.com")).toBe("/");
+    expect(sanitizeReturnTo("/games/123\\@evil.com")).toBe("/");
   });
 });

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { requireAuth, type AuthVariables } from "../middleware/auth";
+import { sanitizeReturnTo } from "./returnTo";
 
 export const auth = new Hono<{ Bindings: Env; Variables: AuthVariables }>();
 
@@ -10,7 +11,5 @@ export const auth = new Hono<{ Bindings: Env; Variables: AuthVariables }>();
 // back to `returnTo` once `requireAuth()` sees a resolved identity. See src/frontend/lib/auth.ts.
 auth.get("/login", requireAuth(), (c) => {
   const returnTo = c.req.query("returnTo") || "/";
-  // Only ever redirect back into this same app — never follow an absolute/external returnTo.
-  const safeReturnTo = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
-  return c.redirect(safeReturnTo);
+  return c.redirect(sanitizeReturnTo(returnTo));
 });
