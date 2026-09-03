@@ -1,4 +1,4 @@
-// Parsing/preview for the free-text tile input in AddRound.tsx. Token format and rack pricing
+// Parsing/preview for the free-text tile input in EnterRound.tsx. Token format and rack pricing
 // live in src/shared/lib/tiles.ts so this can't drift from the server-side roundScoreSchema
 // (src/worker/routes/schemas.ts). The server is still the source of truth for the stored score;
 // this is just input validation + a live "here's what that's worth" preview.

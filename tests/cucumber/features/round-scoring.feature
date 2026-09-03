@@ -75,9 +75,52 @@ Feature: Round scoring
       | Bob    | 68    |
       | Carol  | -49   |
 
+  # Editing a previously-saved round reuses the Add Round modal, pre-populated with that round's
+  # tiles (#52). PATCH /api/games/:id/rounds/:roundId (src/worker/routes/rounds.ts) overwrites
+  # the round's scores in place rather than adding a new round, so the running totals must
+  # reflect the edited tiles, not the original ones.
+  Scenario: An edited round updates the running totals
+    Given a game with players:
+      | name  |
+      | Alice |
+      | Bob   |
+    When round 1 is played:
+      | player | tiles |
+      | Alice  | 1 2 3 |
+      | Bob    |       |
+    And round 1 is edited to:
+      | player | tiles |
+      | Alice  |       |
+      | Bob    | 4 5   |
+    Then the score should show:
+      | player | total |
+      | Alice  | 9     |
+      | Bob    | -9    |
+
+  # Only the most recently played round is editable (#52): tiles get reshuffled and redrawn each
+  # round, so once a later round has been played there's no rack left to check an earlier round's
+  # entry against. This restriction is purely a Scorecard rendering rule (Game.tsx) -- the PATCH
+  # route itself has no such limit -- so it's excluded from the integration layer.
+  @no-integration
+  Scenario: Only the most recently played round can be edited
+    Given a game with players:
+      | name  |
+      | Alice |
+      | Bob   |
+    When round 1 is played:
+      | player | tiles |
+      | Alice  | 5     |
+      | Bob    |       |
+    And round 2 is played:
+      | player | tiles |
+      | Alice  |       |
+      | Bob    | 3     |
+    Then round 1 should not be editable
+    And round 2 should be editable
+
   # A real round has exactly one player who goes out (empty rack) -- #50. Both layers that touch
-  # real player input reject anything else: the Add Round modal blocks the "Save round" button
-  # client-side (src/frontend/pages/AddRound.tsx), and roundScoresSchema rejects it server-side
+  # real player input reject anything else: the Enter Round modal blocks the "Save round" button
+  # client-side (src/frontend/pages/EnterRound.tsx), and roundScoresSchema rejects it server-side
   # (src/worker/routes/schemas.ts) as defense in depth for any other caller of the API.
   Scenario: A round with no winner is rejected
     Given a game with players:

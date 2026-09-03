@@ -34,6 +34,20 @@ async function playRound(view: RenderResult, table: DataTable) {
   await userEvent.setup({ document }).click(view.getByRole("button", { name: "Save round" }));
 }
 
+async function editRound(view: RenderResult, roundNumber: number, table: DataTable) {
+  const user = userEvent.setup({ document });
+  await user.click(await view.findByRole("button", { name: `Edit round ${roundNumber}` }));
+  for (const row of table.hashes()) {
+    // exact: false — unlike a fresh Add Round row, a pre-populated edit row's label already
+    // wraps a tile-hint span (e.g. "3 tiles · 6 pts"), so an exact match on just the player
+    // name would never hit.
+    const input = await view.findByLabelText(row.player, { exact: false });
+    await user.clear(input);
+    if (row.tiles !== "") await user.type(input, row.tiles);
+  }
+  await user.click(view.getByRole("button", { name: "Save round" }));
+}
+
 When("round {int} is played:", async function (this: ComponentWorld, _roundNumber: number, table: DataTable) {
   // Render once per scenario and reuse across rounds — see world.ts's `view` field comment.
   if (!this.view) {
@@ -44,7 +58,7 @@ When("round {int} is played:", async function (this: ComponentWorld, _roundNumbe
   const roundsBefore = document.querySelectorAll("tbody tr").length;
   await playRound(this.view, table);
 
-  // Same race as the e2e layer's AddRound.tsx onSaved (modal closes before the refresh GET
+  // Same race as the e2e layer's EnterRound.tsx onSaved (modal closes before the refresh GET
   // resolves) — wait for the round to actually land before the Then step reads totals.
   await waitFor(() => assert.equal(document.querySelectorAll("tbody tr").length, roundsBefore + 1));
 });
@@ -56,6 +70,28 @@ When("round {int} is attempted:", async function (this: ComponentWorld, _roundNu
   }
   await fillRound(this.view, table);
 });
+
+When("round {int} is edited to:", async function (this: ComponentWorld, roundNumber: number, table: DataTable) {
+  await editRound(this.view!, roundNumber, table);
+  // Same modal-close race as "round N is played" above — wait for the modal to actually close
+  // (the row count doesn't change on an edit, so that can't be the signal here).
+  await waitFor(() => assert.equal(document.querySelector(".modal-backdrop"), null));
+});
+
+Then(
+  "round {int} should be editable",
+  async function (this: ComponentWorld, roundNumber: number) {
+    await this.view!.findByRole("button", { name: `Edit round ${roundNumber}` });
+  },
+);
+
+Then(
+  "round {int} should not be editable",
+  function (this: ComponentWorld, roundNumber: number) {
+    const button = this.view!.queryByRole("button", { name: `Edit round ${roundNumber}` });
+    assert.equal(button, null, `expected no edit button for round ${roundNumber}`);
+  },
+);
 
 Then("the round should be rejected", async function (this: ComponentWorld) {
   const saveButton = await this.view!.findByRole("button", { name: "Save round" });

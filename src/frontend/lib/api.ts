@@ -54,3 +54,15 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
     throw err;
   }
 }
+
+/** Same Access-redirect handling as apiPost() above — see its comment. */
+export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  try {
+    return await request<T>(path, { method: "PATCH", body: body === undefined ? undefined : JSON.stringify(body) });
+  } catch (err) {
+    if (err instanceof TypeError) {
+      throw new ApiRequestError(401, "UNAUTHENTICATED", "Sign in required.");
+    }
+    throw err;
+  }
+}
