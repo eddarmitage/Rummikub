@@ -34,6 +34,20 @@ async function playRound(view: RenderResult, table: DataTable) {
   await userEvent.setup({ document }).click(view.getByRole("button", { name: "Save round" }));
 }
 
+async function editRound(view: RenderResult, roundNumber: number, table: DataTable) {
+  const user = userEvent.setup({ document });
+  await user.click(await view.findByRole("button", { name: `Edit round ${roundNumber}` }));
+  for (const row of table.hashes()) {
+    // exact: false — unlike a fresh Add Round row, a pre-populated edit row's label already
+    // wraps a tile-hint span (e.g. "3 tiles · 6 pts"), so an exact match on just the player
+    // name would never hit.
+    const input = await view.findByLabelText(row.player, { exact: false });
+    await user.clear(input);
+    if (row.tiles !== "") await user.type(input, row.tiles);
+  }
+  await user.click(view.getByRole("button", { name: "Save round" }));
+}
+
 When("round {int} is played:", async function (this: ComponentWorld, _roundNumber: number, table: DataTable) {
   // Render once per scenario and reuse across rounds — see world.ts's `view` field comment.
   if (!this.view) {
@@ -55,6 +69,13 @@ When("round {int} is attempted:", async function (this: ComponentWorld, _roundNu
     await this.view.findByRole("button", { name: "+ Add round" }); // wait for the initial GET
   }
   await fillRound(this.view, table);
+});
+
+When("round {int} is edited to:", async function (this: ComponentWorld, roundNumber: number, table: DataTable) {
+  await editRound(this.view!, roundNumber, table);
+  // Same modal-close race as "round N is played" above — wait for the modal to actually close
+  // (the row count doesn't change on an edit, so that can't be the signal here).
+  await waitFor(() => assert.equal(document.querySelector(".modal-backdrop"), null));
 });
 
 Then("the round should be rejected", async function (this: ComponentWorld) {

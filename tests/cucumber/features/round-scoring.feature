@@ -75,6 +75,28 @@ Feature: Round scoring
       | Bob    | 68    |
       | Carol  | -49   |
 
+  # Editing a previously-saved round reuses the Add Round modal, pre-populated with that round's
+  # tiles (#52). PATCH /api/games/:id/rounds/:roundId (src/worker/routes/rounds.ts) overwrites
+  # the round's scores in place rather than adding a new round, so the running totals must
+  # reflect the edited tiles, not the original ones.
+  Scenario: An edited round updates the running totals
+    Given a game with players:
+      | name  |
+      | Alice |
+      | Bob   |
+    When round 1 is played:
+      | player | tiles |
+      | Alice  | 1 2 3 |
+      | Bob    |       |
+    And round 1 is edited to:
+      | player | tiles |
+      | Alice  |       |
+      | Bob    | 4 5   |
+    Then the score should show:
+      | player | total |
+      | Alice  | 9     |
+      | Bob    | -9    |
+
   # A real round has exactly one player who goes out (empty rack) -- #50. Both layers that touch
   # real player input reject anything else: the Add Round modal blocks the "Save round" button
   # client-side (src/frontend/pages/AddRound.tsx), and roundScoresSchema rejects it server-side

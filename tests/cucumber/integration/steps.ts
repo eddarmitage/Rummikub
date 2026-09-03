@@ -25,7 +25,7 @@ Given("a game with players:", async function (this: IntegrationWorld, table: Dat
   }
 });
 
-When("round {int} is played:", async function (this: IntegrationWorld, _roundNumber: number, table: DataTable) {
+When("round {int} is played:", async function (this: IntegrationWorld, roundNumber: number, table: DataTable) {
   const scores = table.hashes().map((row) => ({
     playerId: this.playerIdByName.get(row.player),
     tiles: row.tiles.trim() === "" ? [] : row.tiles.trim().split(/\s+/),
@@ -36,7 +36,26 @@ When("round {int} is played:", async function (this: IntegrationWorld, _roundNum
     headers: AUTH_HEADERS,
     body: JSON.stringify({ scores }),
   });
-  assert.equal(res.status, 201, `round save failed: ${await res.text()}`);
+  const body = (await res.json()) as { round?: { id: string } };
+  assert.equal(res.status, 201, `round save failed: ${JSON.stringify(body)}`);
+  this.roundIdByNumber.set(roundNumber, body.round!.id);
+});
+
+When("round {int} is edited to:", async function (this: IntegrationWorld, roundNumber: number, table: DataTable) {
+  const roundId = this.roundIdByNumber.get(roundNumber);
+  assert.ok(roundId, `round ${roundNumber} hasn't been played yet`);
+
+  const scores = table.hashes().map((row) => ({
+    playerId: this.playerIdByName.get(row.player),
+    tiles: row.tiles.trim() === "" ? [] : row.tiles.trim().split(/\s+/),
+  }));
+
+  const res = await fetch(`${BASE_URL}/games/${this.gameId}/rounds/${roundId}`, {
+    method: "PATCH",
+    headers: AUTH_HEADERS,
+    body: JSON.stringify({ scores }),
+  });
+  assert.equal(res.status, 200, `round edit failed: ${await res.text()}`);
 });
 
 When("round {int} is attempted:", async function (this: IntegrationWorld, _roundNumber: number, table: DataTable) {

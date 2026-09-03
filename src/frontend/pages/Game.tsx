@@ -3,7 +3,7 @@ import { AddRound } from "./AddRound";
 import { apiGet, ApiRequestError } from "../lib/api";
 import { signIn } from "../lib/auth";
 import { sortTiles } from "../lib/tiles";
-import type { GameDetail } from "../lib/types";
+import type { GameDetail, Round } from "../lib/types";
 
 function formatSigned(n: number): string {
   return n > 0 ? `+${n}` : `${n}`;
@@ -20,12 +20,14 @@ function formatStartTime(iso: string): string {
 /**
  * Scorecard screen (/g/:id) — docs/mockups/scorecard.png. Public read: anyone with the link
  * sees this exact screen, no visual difference between authenticated and anonymous viewers
- * (issue #7). The write action (adding a round) lives in the AddRound modal (#8).
+ * (issue #7). The write actions — adding a round, and editing a previously-saved one (#52) —
+ * both live in the AddRound modal (#8), the latter pre-populated via the round's edit button.
  */
 export function Game({ gameId }: { gameId: string }) {
   const [detail, setDetail] = useState<GameDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAddRound, setShowAddRound] = useState(false);
+  const [editingRound, setEditingRound] = useState<Round | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
 
   const load = useCallback(async () => {
@@ -110,7 +112,17 @@ export function Game({ gameId }: { gameId: string }) {
                   const scoresByPlayer = new Map(round.scores.map((s) => [s.playerId, s]));
                   return (
                     <tr key={round.id}>
-                      <td className="round-number">{round.roundNumber}</td>
+                      <td className="round-number">
+                        {round.roundNumber}
+                        <button
+                          type="button"
+                          className="icon-button round-edit-button"
+                          aria-label={`Edit round ${round.roundNumber}`}
+                          onClick={() => setEditingRound(round)}
+                        >
+                          ✎
+                        </button>
+                      </td>
                       {players.map((p) => {
                         const score = scoresByPlayer.get(p.id);
                         if (!score) return <td key={p.id}>–</td>;
@@ -159,14 +171,19 @@ export function Game({ gameId }: { gameId: string }) {
         </div>
       </div>
 
-      {showAddRound && (
+      {(showAddRound || editingRound) && (
         <AddRound
           gameId={gameId}
           players={players}
-          roundNumber={currentRound}
-          onClose={() => setShowAddRound(false)}
+          roundNumber={editingRound ? editingRound.roundNumber : currentRound}
+          round={editingRound ?? undefined}
+          onClose={() => {
+            setShowAddRound(false);
+            setEditingRound(null);
+          }}
           onSaved={async () => {
             setShowAddRound(false);
+            setEditingRound(null);
             await load();
           }}
         />

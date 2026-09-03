@@ -48,6 +48,17 @@ When("round {int} is attempted:", async function (this: E2EWorld, _roundNumber: 
   await fillRound(this.page, table);
 });
 
+When("round {int} is edited to:", async function (this: E2EWorld, roundNumber: number, table: DataTable) {
+  await this.page.getByRole("button", { name: `Edit round ${roundNumber}` }).click();
+  for (const row of table.hashes()) {
+    await this.page.getByLabel(row.player).fill(row.tiles);
+  }
+  await this.page.getByRole("button", { name: "Save round" }).click();
+  // Same modal-close race as "round N is played" above (Game.tsx's onSaved closes the modal
+  // before awaiting the refresh GET), so wait for the Save button itself to disappear.
+  await expect(this.page.getByRole("button", { name: "Save round" })).toBeHidden();
+});
+
 Then("the round should be rejected", async function (this: E2EWorld) {
   await expect(this.page.getByRole("button", { name: "Save round" })).toBeDisabled();
 });
