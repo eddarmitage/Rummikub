@@ -164,7 +164,7 @@ Error response shape, consistent across all routes:
 │       ├── pages/
 │       │   ├── Home.tsx
 │       │   ├── Game.tsx      # scorecard screen
-│       │   └── AddRound.tsx
+│       │   └── EnterRound.tsx
 │       └── styles/
 ├── migrations/
 │   └── 0001_init.sql

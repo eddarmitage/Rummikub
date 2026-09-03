@@ -25,7 +25,7 @@ export interface FakeRound {
  * `global.fetch` against this in-memory game, using the real computeRoundScores() (imported
  * from src/worker/lib/scoring.ts) so the fake responses stay honest without re-deriving the
  * scoring rules a second time in test code. This lets the component steps focus purely on
- * verifying Game.tsx/AddRound.tsx's own rendering and wiring.
+ * verifying Game.tsx/EnterRound.tsx's own rendering and wiring.
  */
 export class ComponentWorld extends CucumberWorld {
   gameId = "game-1";

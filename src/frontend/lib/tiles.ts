@@ -1,4 +1,4 @@
-// Parsing/preview for the free-text tile input in AddRound.tsx. Mirrors the token rules enforced
+// Parsing/preview for the free-text tile input in EnterRound.tsx. Mirrors the token rules enforced
 // server-side by roundScoreSchema/computeRoundScores (src/worker/routes/schemas.ts,
 // src/worker/lib/scoring.ts) — kept in sync by hand since frontend/worker are separate builds.
 // The server is the source of truth for the stored score; this is just input validation + a

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AddRound } from "./AddRound";
+import { EnterRound } from "./EnterRound";
 import { apiGet, ApiRequestError } from "../lib/api";
 import { signIn } from "../lib/auth";
 import { sortTiles } from "../lib/tiles";
@@ -21,7 +21,7 @@ function formatStartTime(iso: string): string {
  * Scorecard screen (/g/:id) — docs/mockups/scorecard.png. Public read: anyone with the link
  * sees this exact screen, no visual difference between authenticated and anonymous viewers
  * (issue #7). The write actions — adding a round, and editing a previously-saved one (#52) —
- * both live in the AddRound modal (#8), the latter pre-populated via the round's edit button.
+ * both live in the EnterRound modal (#8), the latter pre-populated via the round's edit button.
  *
  * Only the most recently played round gets an edit button, and only while the game is still
  * active: tiles get reshuffled and redrawn each round, so once a later round has been played
@@ -179,7 +179,7 @@ export function Game({ gameId }: { gameId: string }) {
       </div>
 
       {(showAddRound || editingRound) && (
-        <AddRound
+        <EnterRound
           gameId={gameId}
           players={players}
           roundNumber={editingRound ? editingRound.roundNumber : currentRound}

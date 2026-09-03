@@ -119,8 +119,8 @@ Feature: Round scoring
     And round 2 should be editable
 
   # A real round has exactly one player who goes out (empty rack) -- #50. Both layers that touch
-  # real player input reject anything else: the Add Round modal blocks the "Save round" button
-  # client-side (src/frontend/pages/AddRound.tsx), and roundScoresSchema rejects it server-side
+  # real player input reject anything else: the Enter Round modal blocks the "Save round" button
+  # client-side (src/frontend/pages/EnterRound.tsx), and roundScoresSchema rejects it server-side
   # (src/worker/routes/schemas.ts) as defense in depth for any other caller of the API.
   Scenario: A round with no winner is rejected
     Given a game with players:

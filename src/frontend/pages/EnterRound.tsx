@@ -4,7 +4,7 @@ import { isUnauthenticatedError, signIn } from "../lib/auth";
 import { parseTileInput, rackValue } from "../lib/tiles";
 import type { Player, Round } from "../lib/types";
 
-interface AddRoundProps {
+interface EnterRoundProps {
   gameId: string;
   players: Player[];
   roundNumber: number;
@@ -16,7 +16,7 @@ interface AddRoundProps {
 }
 
 /**
- * Add Round modal — docs/mockups/add-round.png (issue #8). Triggered from the Scorecard's
+ * Enter Round modal — docs/mockups/add-round.png (issue #8). Triggered from the Scorecard's
  * "Add round" button, or — pre-populated with an existing round's tiles — from a round row's
  * edit button (#52). This is the write action requiring auth; per the spec, sign-in is
  * prompted at save time rather than gating the modal from opening.
@@ -28,7 +28,7 @@ interface AddRoundProps {
  * is blank; roundScoresSchema (src/worker/routes/schemas.ts) enforces the same rule server-side,
  * for both the add (POST) and edit (PATCH) routes.
  */
-export function AddRound({ gameId, players, roundNumber, round, onClose, onSaved }: AddRoundProps) {
+export function EnterRound({ gameId, players, roundNumber, round, onClose, onSaved }: EnterRoundProps) {
   const [values, setValues] = useState<Record<string, string>>(() => {
     if (!round) return {};
     const initial: Record<string, string> = {};

@@ -58,7 +58,7 @@ When("round {int} is played:", async function (this: ComponentWorld, _roundNumbe
   const roundsBefore = document.querySelectorAll("tbody tr").length;
   await playRound(this.view, table);
 
-  // Same race as the e2e layer's AddRound.tsx onSaved (modal closes before the refresh GET
+  // Same race as the e2e layer's EnterRound.tsx onSaved (modal closes before the refresh GET
   // resolves) — wait for the round to actually land before the Then step reads totals.
   await waitFor(() => assert.equal(document.querySelectorAll("tbody tr").length, roundsBefore + 1));
 });
