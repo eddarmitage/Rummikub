@@ -43,6 +43,7 @@ async function handleFakeRequest(world: ComponentWorld, path: string, method: st
   }
 
   if (path === "/api/games/new" && method === "POST") {
+    world.gamesCreated++;
     return jsonResponse(
       { game: { id: world.gameId, name: "Cucumber component game", status: "active", createdAt: new Date().toISOString(), createdBy: null } },
       201,

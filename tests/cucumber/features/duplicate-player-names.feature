@@ -17,6 +17,9 @@ Feature: Duplicate player names
 
   # Confirming the create-game form doesn't navigate away on that error is purely a frontend
   # concern -- like sign-in-prompt.feature's redirect check -- so this half is @no-integration.
+  # The form validates player names itself before submitting anything (#51), so the duplicate is
+  # caught before the game is ever created -- no orphaned game left behind for the user to lose
+  # track of.
   @no-integration
   Scenario: The create-game form stays put after a duplicate-name rejection
     When I try to create a game with players:
@@ -24,3 +27,4 @@ Feature: Duplicate player names
       | Alice |
       | alice |
     Then I should still be on the create-game form
+    And no game should have been created
