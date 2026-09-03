@@ -111,6 +111,11 @@ Then("they should be redirected to sign in", async function (this: E2EWorld) {
 
 When("I try to create a game with players:", async function (this: E2EWorld, table: DataTable) {
   const names = table.rows().flat();
+  this.page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/games/new") {
+      this.gamesCreated++;
+    }
+  });
   await this.page.goto("/");
   await this.page.getByLabel("Game name").fill("Cucumber e2e duplicate-name game");
   for (let i = 2; i < names.length; i++) {
@@ -130,4 +135,8 @@ Then("I should see the error {string}", async function (this: E2EWorld, message:
 
 Then("I should still be on the create-game form", async function (this: E2EWorld) {
   assert.equal(new URL(this.page.url()).pathname, "/");
+});
+
+Then("no game should have been created", function (this: E2EWorld) {
+  assert.equal(this.gamesCreated, 0);
 });

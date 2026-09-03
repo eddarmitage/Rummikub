@@ -49,6 +49,9 @@ export function Game({ gameId }: { gameId: string }) {
   }, [gameId]);
 
   useEffect(() => {
+    // load()'s setState calls happen asynchronously after a fetch, not synchronously; the
+    // rule can't tell that apart from the derived-state-in-effect pattern it's meant to catch.
+    // oxlint-disable-next-line react/set-state-in-effect
     load();
   }, [load]);
 

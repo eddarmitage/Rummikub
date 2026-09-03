@@ -1,17 +1,17 @@
-// Parsing/preview for the free-text tile input in EnterRound.tsx. Mirrors the token rules enforced
-// server-side by roundScoreSchema/computeRoundScores (src/worker/routes/schemas.ts,
-// src/worker/lib/scoring.ts) — kept in sync by hand since frontend/worker are separate builds.
-// The server is the source of truth for the stored score; this is just input validation + a
-// live "here's what that's worth" preview.
+// Parsing/preview for the free-text tile input in EnterRound.tsx. Token format and rack pricing
+// live in src/shared/lib/tiles.ts so this can't drift from the server-side roundScoreSchema
+// (src/worker/routes/schemas.ts). The server is still the source of truth for the stored score;
+// this is just input validation + a live "here's what that's worth" preview.
 
-const TILE_TOKEN_PATTERN = /^(1[0-3]|[1-9]|[Jj*])$/;
-const JOKER_VALUE = 30;
+import { normalizeTileToken, rackValue, TILE_TOKEN_PATTERN } from "../../shared/lib/tiles";
+
+export { rackValue };
 
 export type ParsedTileInput = { ok: true; tiles: string[] } | { ok: false; error: string };
 
-function normalizeTileToken(token: string): string | null {
+function parseToken(token: string): string | null {
   if (!TILE_TOKEN_PATTERN.test(token)) return null;
-  return token === "j" || token === "J" || token === "*" ? "J" : token;
+  return normalizeTileToken(token);
 }
 
 /** Splits free text on whitespace/commas into normalized tile tokens ("1".."13" or "J"). An
@@ -23,21 +23,13 @@ export function parseTileInput(input: string): ParsedTileInput {
   const tokens = raw.split(/[\s,]+/).filter(Boolean);
   const tiles: string[] = [];
   for (const token of tokens) {
-    const normalized = normalizeTileToken(token);
+    const normalized = parseToken(token);
     if (normalized === null) {
       return { ok: false, error: `"${token}" isn't a valid tile — use 1-13, or J (or *) for a joker.` };
     }
     tiles.push(normalized);
   }
   return { ok: true, tiles };
-}
-
-export function tileValue(tile: string): number {
-  return tile === "J" ? JOKER_VALUE : Number(tile);
-}
-
-export function rackValue(tiles: string[]): number {
-  return tiles.reduce((sum, tile) => sum + tileValue(tile), 0);
 }
 
 function compareTiles(a: string, b: string): number {

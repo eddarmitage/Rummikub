@@ -11,6 +11,9 @@ export class E2EWorld extends CucumberWorld {
   anonymousContext?: BrowserContext;
   anonymousPage?: Page;
   gameUrl = "";
+  /** Counts POST /api/games/new requests the page has issued, so a scenario can assert none
+   *  happened (#51) -- mirrors the component layer's fetch-stub call count. */
+  gamesCreated = 0;
 
   constructor(options: IWorldOptions) {
     super(options);

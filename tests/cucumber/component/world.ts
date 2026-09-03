@@ -31,6 +31,8 @@ export class ComponentWorld extends CucumberWorld {
   gameId = "game-1";
   players: FakePlayer[] = [];
   rounds: FakeRound[] = [];
+  /** Counts POST /api/games/new calls, so a scenario can assert none happened (#51). */
+  gamesCreated = 0;
   /** When true, the stubbed POST /rounds responds 401 UNAUTHENTICATED instead of saving. */
   simulateUnauthenticated = false;
   /** Rendered once per scenario and reused across "round N is played" steps — RTL's render()
