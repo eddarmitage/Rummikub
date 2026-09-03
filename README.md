@@ -143,7 +143,8 @@ a one-time step — once set, every future deploy picks them up automatically.
 `Cf-Access-Jwt-Assertion` header) under `wrangler dev` or the test suites.
 `src/worker/middleware/auth.ts` accepts an `X-Dev-User-Email` header as a stand-in identity,
 but only when `DEV_AUTH_BYPASS_ENABLED=true` is set — which is never true in the real
-deployment, since `wrangler.toml.example` doesn't define it. To use it locally, add a line to
+deployment, since `wrangler.toml.example` doesn't define it and the deploy workflow
+(`.github/workflows/deploy.yml`) has no way to inject it. To use it locally, add a line to
 your gitignored `.dev.vars` file (create it if it doesn't exist):
 
 ```
@@ -152,6 +153,14 @@ DEV_AUTH_BYPASS_ENABLED=true
 
 then send `X-Dev-User-Email: <any-email>` on write requests instead of authenticating via a
 real Access session.
+
+> [!WARNING]
+> `DEV_AUTH_BYPASS_ENABLED=true` accepts *any* caller-supplied identity with no verification —
+> it is equivalent to turning off authentication entirely. Never add it to `wrangler.toml.example`,
+> a GitHub Actions Variable/Secret, or any other deploy-time config for the real Cloudflare
+> deployment. Its only sanctioned uses are local dev (`.dev.vars`, gitignored), the test suites,
+> and the standalone Docker self-hosting mode (see below), all of which are single-user or
+> single-trusted-group contexts by design.
 
 ## Docker (self-hosted, no-auth)
 

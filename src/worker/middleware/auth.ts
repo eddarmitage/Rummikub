@@ -11,11 +11,20 @@ import type { User } from "../db/schema";
 export interface AuthEnv {
   DB: D1Database;
   /**
-   * Local/test-only escape hatch. Never set in the real deployed `wrangler.toml` — only
-   * via a gitignored `.dev.vars` file for `wrangler dev`, or per-test env overrides for
-   * `vitest-pool-workers` (#9). When this is exactly the string `"true"`, `requireAuth()`
-   * accepts an `X-Dev-User-Email` header as the caller's identity instead of requiring a
-   * live Cloudflare Access session. See README "Auth setup".
+   * Local/test-only escape hatch. When this is exactly the string `"true"`, `requireAuth()`
+   * accepts a self-reported `X-Dev-User-Email` header as the caller's identity for *any*
+   * request — no Cloudflare Access session, no verification of any kind. Setting this in the
+   * real deployment is equivalent to disabling authentication for every write route: anyone
+   * who can reach the Worker could claim to be any user and mutate any game.
+   *
+   * DO NOT add this to `wrangler.toml.example` or any deploy-time config (GitHub Actions
+   * Variables/Secrets, `.github/workflows/deploy.yml`) — that file/pipeline has no
+   * `${DEV_AUTH_BYPASS_ENABLED}` placeholder specifically so this can't be turned on via CI
+   * config alone; adding one would need to be a deliberate, reviewed code change to this repo.
+   * Only ever set it via a gitignored `.dev.vars` file for `wrangler dev`, or per-test env
+   * overrides for `vitest-pool-workers` (#9) / the standalone Docker harness (`src/standalone/`,
+   * see AGENTS.md "Hard constraints" and README "Docker (self-hosted, no-auth)"). See README
+   * "Auth setup".
    */
   DEV_AUTH_BYPASS_ENABLED?: string;
   /**
