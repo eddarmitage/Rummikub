@@ -43,7 +43,9 @@ export function Game({ gameId }: { gameId: string }) {
   }, [gameId]);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- fetch-on-mount, not derived state
+    // load()'s setState calls happen asynchronously after a fetch, not synchronously; the
+    // rule can't tell that apart from the derived-state-in-effect pattern it's meant to catch.
+    // oxlint-disable-next-line react/set-state-in-effect
     load();
   }, [load]);
 
