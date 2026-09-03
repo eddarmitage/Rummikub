@@ -43,6 +43,7 @@ export function Game({ gameId }: { gameId: string }) {
   }, [gameId]);
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- fetch-on-mount, not derived state
     load();
   }, [load]);
 
