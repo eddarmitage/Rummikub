@@ -132,3 +132,7 @@ Then("I should see the error {string}", async function (this: ComponentWorld, me
 Then("I should still be on the create-game form", function () {
   assert.equal(fakeLocation.href, "/");
 });
+
+Then("no game should have been created", function (this: ComponentWorld) {
+  assert.equal(this.gamesCreated, 0);
+});

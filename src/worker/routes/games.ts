@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { addPlayer, createDb, createGame, ensureGameMember, getGame, getGameDetail, listPlayers } from "../db/queries";
 import { errorResponse, parseBody } from "../lib/http";
-import { isDuplicatePlayerName } from "../lib/players";
+import { isDuplicatePlayerName } from "../../shared/lib/players";
 import { requireAuth, type AuthVariables } from "../middleware/auth";
 import { rounds } from "./rounds";
 import { addPlayerSchema, createGameSchema } from "./schemas";
