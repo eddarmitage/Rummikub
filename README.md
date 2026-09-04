@@ -102,6 +102,12 @@ routes at all, so `requireAuth()` falls through to a plain `401 UNAUTHENTICATED`
 instead of Access ever stepping in — including for `auth/login`, where that means the browser
 renders the raw error JSON instead of following Access's hosted-login redirect.
 
+Only the four write routes above belong in that table. In particular **don't add
+`api/config`** — it's a public `GET` the scorecard fetches to decide whether to show a "Sign
+in" button, so gating it behind Access would make anonymous viewers fail that fetch. It
+reports `authEnabled: false` wherever `DEV_AUTH_BYPASS_ENABLED` is on (the Docker build below,
+or `wrangler dev` with `.dev.vars`), and `true` on a real deployment.
+
 Note the **Subdomain** field (separate from Domain) needs your Worker's own subdomain
 (`<your-worker>`) — leaving it blank scopes the app to the bare account domain, which won't
 match your Worker's traffic at all. Don't add a leading `/` inside the Path field; the UI

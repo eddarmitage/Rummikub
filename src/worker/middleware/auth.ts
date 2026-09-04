@@ -100,6 +100,19 @@ export async function verifyAccessJwt(
 }
 
 /**
+ * Whether this instance has a real sign-in to offer. False wherever the dev bypass is on — the
+ * standalone no-auth Docker harness (`src/standalone/server.ts`) and `wrangler dev` with a
+ * `.dev.vars` bypass both stamp every request with a fixed `X-Dev-User-Email` identity, so
+ * there is no login for a caller to complete and `/api/auth/login` just redirects straight back
+ * to `returnTo`. Surfaced to the frontend by `GET /api/config` so it can hide the "Sign in"
+ * button rather than offering a no-op. Lives here so it can't drift from `requireAuth()`'s own
+ * reading of the same flag.
+ */
+export function isAuthEnabled(env: AuthEnv): boolean {
+  return env.DEV_AUTH_BYPASS_ENABLED !== "true";
+}
+
+/**
  * Requires an authenticated caller and upserts them into the `users` table, attaching the
  * resulting row to `c.var.user` for downstream handlers.
  *

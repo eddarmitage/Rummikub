@@ -43,3 +43,8 @@ export interface GameDetail {
   rounds: Round[];
   totals: PlayerTotal[];
 }
+
+/** Mirrors `GET /api/config` in src/worker/index.ts. */
+export interface AppConfig {
+  authEnabled: boolean;
+}

@@ -26,6 +26,12 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 async function handleFakeRequest(world: ComponentWorld, path: string, method: string, rawBody?: BodyInit | null) {
+  // The component layer stands in for the real Cloudflare deployment, where auth is on — the
+  // "Sign in" button is expected to render (src/frontend/pages/Game.tsx).
+  if (path === "/api/config" && method === "GET") {
+    return jsonResponse({ authEnabled: true });
+  }
+
   const gameDetailMatch = path.match(/^\/api\/games\/([^/]+)$/);
   if (gameDetailMatch && method === "GET") {
     const totalsByPlayer = new Map<string, number>();

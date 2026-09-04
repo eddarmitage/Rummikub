@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AddRound } from "./AddRound";
 import { apiGet, ApiRequestError } from "../lib/api";
-import { signIn } from "../lib/auth";
+import { fetchAuthEnabled, signIn } from "../lib/auth";
 import { sortTiles } from "../lib/tiles";
 import type { GameDetail } from "../lib/types";
 
@@ -27,6 +27,9 @@ export function Game({ gameId }: { gameId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [showAddRound, setShowAddRound] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  // `null` until the probe resolves — the button renders only on a definite `true`, so a
+  // no-auth instance never flashes a "Sign in" that then disappears.
+  const [authEnabled, setAuthEnabled] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -45,6 +48,16 @@ export function Game({ gameId }: { gameId: string }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    let active = true;
+    fetchAuthEnabled().then((enabled) => {
+      if (active) setAuthEnabled(enabled);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function handleShare() {
     try {
@@ -153,9 +166,11 @@ export function Game({ gameId }: { gameId: string }) {
           <button type="button" className="button-outline" onClick={handleShare}>
             {shareCopied ? "Copied!" : "Share link"}
           </button>
-          <button type="button" className="button-outline" onClick={() => signIn()}>
-            Sign in
-          </button>
+          {authEnabled === true && (
+            <button type="button" className="button-outline" onClick={() => signIn()}>
+              Sign in
+            </button>
+          )}
         </div>
       </div>
 
