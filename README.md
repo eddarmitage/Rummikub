@@ -103,6 +103,12 @@ routes at all, so `requireAuth()` falls through to a plain `401 UNAUTHENTICATED`
 instead of Access ever stepping in — including for `auth/login`, where that means the browser
 renders the raw error JSON instead of following Access's hosted-login redirect.
 
+Only the four write routes above belong in that table. In particular **don't add
+`api/config`** — it's a public `GET` the scorecard fetches to decide whether to show a "Sign
+in" button, so gating it behind Access would make anonymous viewers fail that fetch. It
+reports `authEnabled: false` wherever `DEV_AUTH_BYPASS_ENABLED` is on (the Docker build below,
+or `wrangler dev` with `.dev.vars`), and `true` on a real deployment.
+
 Note the **Subdomain** field (separate from Domain) needs your Worker's own subdomain
 (`<your-worker>`) — leaving it blank scopes the app to the bare account domain, which won't
 match your Worker's traffic at all. Don't add a leading `/` inside the Path field; the UI
@@ -144,7 +150,8 @@ a one-time step — once set, every future deploy picks them up automatically.
 `Cf-Access-Jwt-Assertion` header) under `wrangler dev` or the test suites.
 `src/worker/middleware/auth.ts` accepts an `X-Dev-User-Email` header as a stand-in identity,
 but only when `DEV_AUTH_BYPASS_ENABLED=true` is set — which is never true in the real
-deployment, since `wrangler.toml.example` doesn't define it. To use it locally, add a line to
+deployment, since `wrangler.toml.example` doesn't define it and the deploy workflow
+(`.github/workflows/deploy.yml`) has no way to inject it. To use it locally, add a line to
 your gitignored `.dev.vars` file (create it if it doesn't exist):
 
 ```
@@ -153,6 +160,37 @@ DEV_AUTH_BYPASS_ENABLED=true
 
 then send `X-Dev-User-Email: <any-email>` on write requests instead of authenticating via a
 real Access session.
+
+> [!WARNING]
+> `DEV_AUTH_BYPASS_ENABLED=true` accepts *any* caller-supplied identity with no verification —
+> it is equivalent to turning off authentication entirely. Never add it to `wrangler.toml.example`,
+> a GitHub Actions Variable/Secret, or any other deploy-time config for the real Cloudflare
+> deployment. Its only sanctioned uses are local dev (`.dev.vars`, gitignored), the test suites,
+> and the standalone Docker self-hosting mode (see below), all of which are single-user or
+> single-trusted-group contexts by design.
+
+## Docker (self-hosted, no-auth)
+
+For running your own instance without a Cloudflare account or Access — e.g. to score games with
+friends on your own network. No login: every request is stamped with a single fixed local user,
+so this is meant for one trusted group sharing an instance, not a multi-tenant deployment.
+
+```
+docker compose up
+```
+
+Then open `http://localhost:8080`. Data is written to a local SQLite file in the `rummikub-data`
+Docker volume, so it survives container restarts and rebuilds; remove the volume
+(`docker compose down -v`) to start fresh.
+
+Architecture-wise, this doesn't run `wrangler dev` or need workerd at all: `src/standalone/server.ts`
+is a small Node harness (`@hono/node-server`) that serves the *same* Hono app and routes
+(`src/worker/index.ts`, `src/worker/routes/`, `src/worker/db/queries.ts`) the Cloudflare Worker
+does. The only thing it swaps out is the `DB` binding — `src/standalone/sqlite-d1.ts` is a small
+shim implementing the `D1Database` interface over a plain SQLite file (via Node's built-in
+`node:sqlite`), and `src/standalone/migrate.ts` applies `migrations/*.sql` to it directly. Identity
+reuses `requireAuth()`'s existing `X-Dev-User-Email` dev-bypass header (see above) rather than any
+new auth code.
 
 ## Deployment
 

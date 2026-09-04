@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite build && concurrently -n vite,wrangler -c blue,green \"vite build --watch\" \"wrangler dev\"",
     "build": "vite build",
@@ -17,9 +20,12 @@
     "test:cucumber:integration": "cucumber-js -p integration",
     "test:cucumber:e2e": "cucumber-js -p e2e",
     "test:cucumber": "npm run test:cucumber:component && npm run test:cucumber:integration && npm run test:cucumber:e2e",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "build:standalone": "esbuild src/standalone/server.ts --bundle --platform=node --format=esm --outfile=dist/standalone/server.mjs --external:node:sqlite",
+    "start:standalone": "node dist/standalone/server.mjs"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.5",
     "jose": "^6.2.10",
@@ -43,6 +49,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "concurrently": "^10.0.5",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.28.1",
     "jsdom": "^30.0.1",
     "oxlint": "^1.81.0",
     "tsx": "^4.23.12",

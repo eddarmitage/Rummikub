@@ -16,7 +16,10 @@ React Testing Library + Playwright + cucumber-js (tests).
   same Cloudflare Worker — no separate Pages project, no second `wrangler.toml`.
 - **No Tailwind, no UI component library.** Plain CSS only — deliberate choice for a small app.
 - **Reads are public, writes require auth.** `GET` routes must never be gated behind Cloudflare
-  Access; all mutating routes must be.
+  Access; all mutating routes must be. The one sanctioned exception is the standalone Docker build
+  (`src/standalone/`): it's meant for one trusted group self-hosting an instance, not multi-tenant
+  use, so every request there is stamped with a fixed local identity via the `X-Dev-User-Email`
+  dev-auth-bypass header instead of a real auth screen.
 - **Consistent API error shape** across every route:
   ```json
   { "error": { "code": "GAME_NOT_FOUND", "message": "That game doesn't exist." } }

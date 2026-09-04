@@ -15,5 +15,5 @@
     "resolveJsonModule": true,
     "noEmit": true
   },
-  "include": ["src/worker", "src/shared", "scripts", "worker-configuration.d.ts"]
+  "include": ["src/worker", "src/shared", "src/standalone", "scripts", "worker-configuration.d.ts"]
 }

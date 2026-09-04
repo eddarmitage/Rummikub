@@ -1,6 +1,6 @@
 import { exportJWK, generateKeyPair, SignJWT, type JWK } from "jose";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { verifyAccessJwt } from "../../../src/worker/middleware/auth";
+import { isAuthEnabled, verifyAccessJwt } from "../../../src/worker/middleware/auth";
 import { sanitizeReturnTo } from "../../../src/worker/routes/returnTo";
 
 const AUD = "test-application-aud-tag";
@@ -116,6 +116,24 @@ describe("verifyAccessJwt", () => {
     await expect(
       verifyAccessJwt("not-a-jwt", { ACCESS_TEAM_DOMAIN: teamDomain, ACCESS_AUD: AUD }),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("isAuthEnabled", () => {
+  const DB = {} as D1Database;
+
+  it("is enabled on a real deployment, where the bypass var is unset", () => {
+    expect(isAuthEnabled({ DB })).toBe(true);
+  });
+
+  it("is disabled wherever the dev bypass is on (standalone Docker, wrangler dev)", () => {
+    expect(isAuthEnabled({ DB, DEV_AUTH_BYPASS_ENABLED: "true" })).toBe(false);
+  });
+
+  it("treats any value other than the exact string \"true\" as auth still being on", () => {
+    expect(isAuthEnabled({ DB, DEV_AUTH_BYPASS_ENABLED: "false" })).toBe(true);
+    expect(isAuthEnabled({ DB, DEV_AUTH_BYPASS_ENABLED: "1" })).toBe(true);
+    expect(isAuthEnabled({ DB, DEV_AUTH_BYPASS_ENABLED: "TRUE" })).toBe(true);
   });
 });
 

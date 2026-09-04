@@ -12,6 +12,11 @@ run_worker_first = ["/api/*"]
 # that pass through the self-hosted Access Application (README "Auth setup") — not secrets,
 # but still account-specific infra config, so they're placeholders here rather than real
 # values. Fill in your own gitignored wrangler.toml, never this file.
+#
+# Do NOT add DEV_AUTH_BYPASS_ENABLED here (or anywhere in the real deploy pipeline). It makes
+# requireAuth() accept any self-reported X-Dev-User-Email header with no verification — setting
+# it in production is equivalent to disabling authentication entirely. It's a local dev/test/
+# standalone-Docker-only escape hatch — see src/worker/middleware/auth.ts and README "Auth setup".
 [vars]
 # Zero Trust team domain, e.g. "https://your-team.cloudflareaccess.com".
 ACCESS_TEAM_DOMAIN = "${ACCESS_TEAM_DOMAIN}"
