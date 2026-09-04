@@ -40,10 +40,12 @@ React Testing Library + Playwright + cucumber-js (tests).
 │   │   └── db/
 │   │       ├── schema.ts     # Drizzle schema
 │   │       └── queries.ts
-│   └── frontend/
-│       ├── main.tsx
-│       ├── pages/
-│       └── styles/
+│   ├── frontend/
+│   │   ├── main.tsx
+│   │   ├── pages/
+│   │   └── styles/
+│   └── shared/               # Pure, dependency-free logic used by both worker and frontend
+│       └── lib/                 # (e.g. isDuplicatePlayerName, tiles.ts) -- neither side imports the other's code
 ├── migrations/                 # D1 SQL migrations
 ├── scripts/
 │   └── seed.ts                 # populates local D1 with a fake game for dev/e2e
@@ -71,6 +73,7 @@ React Testing Library + Playwright + cucumber-js (tests).
 | `npm run build`         | Builds the React frontend into `dist/client` via Vite                                                                                                                                                                                  |
 | `npm run deploy`        | Builds the frontend, then `wrangler deploy`                                                                                                                                                                                            |
 | `npm run typecheck`     | Type-checks the frontend, worker, and each test suite as separate `tsc` invocations (`tsconfig.json`, `tsconfig.worker.json`, `tsconfig.test.*.json`) — they have different global types (DOM vs Workers vs test-only ambient modules) |
+| `npm run lint`          | Lints the repo with oxlint (`.oxlintrc.json`)                                                                                                                                                                                          |
 | `npm run cf-typegen`    | Regenerates `worker-configuration.d.ts` from `wrangler.toml`; rerun after changing bindings                                                                                                                                            |
 | `npm run test`          | Runs unit, integration (real `workerd` + local D1 via `@cloudflare/vitest-pool-workers`), and component tests (Vitest) — fully local, no setup needed                                                                                  |
 | `npm run test:watch`    | Same as `npm run test`, in watch mode                                                                                                                                                                                                  |

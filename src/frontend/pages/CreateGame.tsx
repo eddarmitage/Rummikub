@@ -2,6 +2,7 @@ import { useState } from "react";
 import { apiPost } from "../lib/api";
 import { isUnauthenticatedError, signIn } from "../lib/auth";
 import type { Game, Player } from "../lib/types";
+import { isDuplicatePlayerName } from "../../shared/lib/players";
 
 const MIN_PLAYERS = 2;
 
@@ -37,13 +38,22 @@ export function CreateGame() {
     e.preventDefault();
     if (!canSubmit) return;
 
+    const trimmedPlayers = players.map((p) => p.trim()).filter((p) => p.length > 0);
+    const seenPlayers: { name: string }[] = [];
+    for (const playerName of trimmedPlayers) {
+      if (isDuplicatePlayerName(seenPlayers, playerName)) {
+        setError("A player with that name already exists in this game.");
+        return;
+      }
+      seenPlayers.push({ name: playerName });
+    }
+
     setSubmitting(true);
     setError(null);
     try {
       const trimmedName = name.trim();
       const { game } = await apiPost<{ game: Game }>("/games/new", trimmedName ? { name: trimmedName } : {});
 
-      const trimmedPlayers = players.map((p) => p.trim()).filter((p) => p.length > 0);
       for (const [index, playerName] of trimmedPlayers.entries()) {
         await apiPost<{ player: Player }>(`/games/${game.id}/players`, { name: playerName, sortOrder: index });
       }

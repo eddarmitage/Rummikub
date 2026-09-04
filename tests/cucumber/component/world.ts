@@ -25,12 +25,14 @@ export interface FakeRound {
  * `global.fetch` against this in-memory game, using the real computeRoundScores() (imported
  * from src/worker/lib/scoring.ts) so the fake responses stay honest without re-deriving the
  * scoring rules a second time in test code. This lets the component steps focus purely on
- * verifying Game.tsx/AddRound.tsx's own rendering and wiring.
+ * verifying Game.tsx/EnterRound.tsx's own rendering and wiring.
  */
 export class ComponentWorld extends CucumberWorld {
   gameId = "game-1";
   players: FakePlayer[] = [];
   rounds: FakeRound[] = [];
+  /** Counts POST /api/games/new calls, so a scenario can assert none happened (#51). */
+  gamesCreated = 0;
   /** When true, the stubbed POST /rounds responds 401 UNAUTHENTICATED instead of saving. */
   simulateUnauthenticated = false;
   /** Rendered once per scenario and reused across "round N is played" steps — RTL's render()

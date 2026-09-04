@@ -164,7 +164,7 @@ Error response shape, consistent across all routes:
 │       ├── pages/
 │       │   ├── Home.tsx
 │       │   ├── Game.tsx      # scorecard screen
-│       │   └── AddRound.tsx
+│       │   └── EnterRound.tsx
 │       └── styles/
 ├── migrations/
 │   └── 0001_init.sql
@@ -210,7 +210,10 @@ Core screens roughed out during design. Mockup screenshots live alongside this d
 - One row per player: name on the left, a free-text input on the right for the tiles left on
   their rack (e.g. "3 5 8 12"; J or * for a joker; blank means they went out), with a live hint
   showing the parsed tile count and rack value, or a validation error for an unrecognized token
-- Single "Save round" button at the bottom, full width; disabled while any row has an invalid tile
+- Single "Save round" button at the bottom, full width; disabled while any row has an invalid
+  tile, or while the racks don't show exactly one player having gone out (blank) — a round has
+  exactly one winner, and blocking submission with a hint follows the same treatment as an
+  invalid tile
 - This is the write action that requires auth — if the person isn't signed in when they try to save, this is the natural point to prompt sign-in rather than gating it earlier
 
 ### Home (only meaningful once auth/users exist — not part of v1's link-only flow)

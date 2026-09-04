@@ -1,28 +1,40 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiPost } from "../lib/api";
+import { apiPatch, apiPost } from "../lib/api";
 import { isUnauthenticatedError, signIn } from "../lib/auth";
 import { parseTileInput, rackValue } from "../lib/tiles";
-import type { Player } from "../lib/types";
+import type { Player, Round } from "../lib/types";
 
-interface AddRoundProps {
+interface EnterRoundProps {
   gameId: string;
   players: Player[];
   roundNumber: number;
+  /** When set, edits this previously-saved round instead of adding a new one (#52) — the form
+   *  is pre-populated with its tiles and PATCHes rather than POSTs on save. */
+  round?: Round;
   onClose: () => void;
   onSaved: () => void;
 }
 
 /**
- * Add Round modal — docs/mockups/add-round.png (issue #8). Triggered from the Scorecard's
- * "Add round" button. This is the write action requiring auth; per the spec, sign-in is
+ * Enter Round modal — docs/mockups/add-round.png (issue #8). Triggered from the Scorecard's
+ * "Add round" button, or — pre-populated with an existing round's tiles — from a round row's
+ * edit button (#52). This is the write action requiring auth; per the spec, sign-in is
  * prompted at save time rather than gating the modal from opening.
  *
  * Each player's remaining rack is entered as free text (e.g. "3 5 8 J 12"; leave blank if they
  * went out) — the server computes the actual round score from these tiles per official
- * Rummikub rules (src/worker/lib/scoring.ts).
+ * Rummikub rules (src/worker/lib/scoring.ts). Exactly one player must go out per round (#50),
+ * so submission is blocked — same treatment as an invalid tile token — unless exactly one rack
+ * is blank; roundScoresSchema (src/worker/routes/schemas.ts) enforces the same rule server-side,
+ * for both the add (POST) and edit (PATCH) routes.
  */
-export function AddRound({ gameId, players, roundNumber, onClose, onSaved }: AddRoundProps) {
-  const [values, setValues] = useState<Record<string, string>>({});
+export function EnterRound({ gameId, players, roundNumber, round, onClose, onSaved }: EnterRoundProps) {
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    if (!round) return {};
+    const initial: Record<string, string> = {};
+    for (const score of round.scores) initial[score.playerId] = score.tiles.join(" ");
+    return initial;
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,10 +53,18 @@ export function AddRound({ gameId, players, roundNumber, onClose, onSaved }: Add
   }, [players, values]);
 
   const hasInvalidRow = [...parsedByPlayer.values()].some((parsed) => !parsed.ok);
+  const goneOutCount = [...parsedByPlayer.values()].filter((parsed) => parsed.ok && parsed.tiles.length === 0).length;
+  const winnerHint = hasInvalidRow
+    ? null
+    : goneOutCount === 0
+      ? "Exactly one player must go out — leave their rack blank to end the round."
+      : goneOutCount > 1
+        ? "Only one player can go out — leave just one rack blank."
+        : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (hasInvalidRow) return;
+    if (hasInvalidRow || goneOutCount !== 1) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -52,7 +72,11 @@ export function AddRound({ gameId, players, roundNumber, onClose, onSaved }: Add
         const parsed = parsedByPlayer.get(p.id);
         return { playerId: p.id, tiles: parsed?.ok ? parsed.tiles : [] };
       });
-      await apiPost(`/games/${gameId}/rounds`, { scores });
+      if (round) {
+        await apiPatch(`/games/${gameId}/rounds/${round.id}`, { scores });
+      } else {
+        await apiPost(`/games/${gameId}/rounds`, { scores });
+      }
       onSaved();
     } catch (err) {
       if (isUnauthenticatedError(err)) {
@@ -68,7 +92,7 @@ export function AddRound({ gameId, players, roundNumber, onClose, onSaved }: Add
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="card-header">
-          <h2>Round {roundNumber}</h2>
+          <h2>{round ? `Edit round ${roundNumber}` : `Round ${roundNumber}`}</h2>
           <button type="button" className="icon-button" aria-label="Close" onClick={onClose}>
             ×
           </button>
@@ -103,9 +127,11 @@ export function AddRound({ gameId, players, roundNumber, onClose, onSaved }: Add
             );
           })}
 
+          {winnerHint && <p className="tile-hint tile-hint-error">{winnerHint}</p>}
+
           {error && <p className="error">{error}</p>}
 
-          <button type="submit" className="button-primary" disabled={submitting || hasInvalidRow}>
+          <button type="submit" className="button-primary" disabled={submitting || hasInvalidRow || goneOutCount !== 1}>
             Save round
           </button>
         </form>

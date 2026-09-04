@@ -118,6 +118,17 @@ body {
   color: var(--color-text-muted);
 }
 
+.round-number {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.round-number .icon-button {
+  font-size: 0.9rem;
+  padding: 0;
+}
+
 .scorecard-table thead th {
   color: var(--color-text-muted);
   font-weight: 500;

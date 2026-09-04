@@ -17,7 +17,7 @@ Given("a game with players:", function (this: ComponentWorld, table: DataTable) 
   this.players = table.rows().flat().map((name, i) => ({ id: `p${i + 1}`, gameId: this.gameId, name, sortOrder: i }));
 });
 
-async function playRound(view: RenderResult, table: DataTable) {
+async function fillRound(view: RenderResult, table: DataTable) {
   // Pass `document` explicitly rather than relying on userEvent's default options — those
   // capture `globalThis.document` once at this module's import time (see setup.js's
   // `defaultOptionsDirect`), before hooks.ts has installed this scenario's jsdom globals.
@@ -26,6 +26,24 @@ async function playRound(view: RenderResult, table: DataTable) {
   for (const row of table.hashes()) {
     if (row.tiles === "") continue; // input already starts blank ("winner") — nothing to type
     await user.type(await view.findByLabelText(row.player), row.tiles);
+  }
+}
+
+async function playRound(view: RenderResult, table: DataTable) {
+  await fillRound(view, table);
+  await userEvent.setup({ document }).click(view.getByRole("button", { name: "Save round" }));
+}
+
+async function editRound(view: RenderResult, roundNumber: number, table: DataTable) {
+  const user = userEvent.setup({ document });
+  await user.click(await view.findByRole("button", { name: `Edit round ${roundNumber}` }));
+  for (const row of table.hashes()) {
+    // exact: false — unlike a fresh Add Round row, a pre-populated edit row's label already
+    // wraps a tile-hint span (e.g. "3 tiles · 6 pts"), so an exact match on just the player
+    // name would never hit.
+    const input = await view.findByLabelText(row.player, { exact: false });
+    await user.clear(input);
+    if (row.tiles !== "") await user.type(input, row.tiles);
   }
   await user.click(view.getByRole("button", { name: "Save round" }));
 }
@@ -40,10 +58,53 @@ When("round {int} is played:", async function (this: ComponentWorld, _roundNumbe
   const roundsBefore = document.querySelectorAll("tbody tr").length;
   await playRound(this.view, table);
 
-  // Same race as the e2e layer's AddRound.tsx onSaved (modal closes before the refresh GET
+  // Same race as the e2e layer's EnterRound.tsx onSaved (modal closes before the refresh GET
   // resolves) — wait for the round to actually land before the Then step reads totals.
   await waitFor(() => assert.equal(document.querySelectorAll("tbody tr").length, roundsBefore + 1));
 });
+
+When("round {int} is attempted:", async function (this: ComponentWorld, _roundNumber: number, table: DataTable) {
+  if (!this.view) {
+    this.view = render(createElement(Game, { gameId: this.gameId }));
+    await this.view.findByRole("button", { name: "+ Add round" }); // wait for the initial GET
+  }
+  await fillRound(this.view, table);
+});
+
+When("round {int} is edited to:", async function (this: ComponentWorld, roundNumber: number, table: DataTable) {
+  await editRound(this.view!, roundNumber, table);
+  // Same modal-close race as "round N is played" above — wait for the modal to actually close
+  // (the row count doesn't change on an edit, so that can't be the signal here).
+  await waitFor(() => assert.equal(document.querySelector(".modal-backdrop"), null));
+});
+
+Then(
+  "round {int} should be editable",
+  async function (this: ComponentWorld, roundNumber: number) {
+    await this.view!.findByRole("button", { name: `Edit round ${roundNumber}` });
+  },
+);
+
+Then(
+  "round {int} should not be editable",
+  function (this: ComponentWorld, roundNumber: number) {
+    const button = this.view!.queryByRole("button", { name: `Edit round ${roundNumber}` });
+    assert.equal(button, null, `expected no edit button for round ${roundNumber}`);
+  },
+);
+
+Then("the round should be rejected", async function (this: ComponentWorld) {
+  const saveButton = await this.view!.findByRole("button", { name: "Save round" });
+  assert.equal((saveButton as HTMLButtonElement).disabled, true, "expected the Save round button to be disabled");
+});
+
+Then(
+  "the Add Round modal should show the hint {string}",
+  async function (this: ComponentWorld, hint: string) {
+    const hintEl = await this.view!.findByText(hint);
+    assert.ok(hintEl, `expected the hint "${hint}" to be shown`);
+  },
+);
 
 When(
   "an anonymous visitor tries to play round {int}:",
@@ -106,4 +167,8 @@ Then("I should see the error {string}", async function (this: ComponentWorld, me
 
 Then("I should still be on the create-game form", function () {
   assert.equal(fakeLocation.href, "/");
+});
+
+Then("no game should have been created", function (this: ComponentWorld) {
+  assert.equal(this.gamesCreated, 0);
 });

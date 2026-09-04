@@ -1,5 +1,5 @@
 import { Given, Then, When, type DataTable } from "@cucumber/cucumber";
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import assert from "node:assert/strict";
 import { BASE_URL } from "./hooks";
 import type { E2EWorld } from "./world";
@@ -23,11 +23,15 @@ Given("a game with players:", async function (this: E2EWorld, table: DataTable) 
   this.gameUrl = this.page.url();
 });
 
-async function fillAndSaveRound(page: Page, table: DataTable): Promise<void> {
+async function fillRound(page: Page, table: DataTable): Promise<void> {
   await page.getByRole("button", { name: "+ Add round" }).click();
   for (const row of table.hashes()) {
     await page.getByLabel(row.player).fill(row.tiles);
   }
+}
+
+async function fillAndSaveRound(page: Page, table: DataTable): Promise<void> {
+  await fillRound(page, table);
   await page.getByRole("button", { name: "Save round" }).click();
 }
 
@@ -38,6 +42,37 @@ When("round {int} is played:", async function (this: E2EWorld, _roundNumber: num
   // repopulates the scorecard, so wait for the round row itself rather than just the modal
   // disappearing (same race the component layer's steps.ts hits too).
   await this.page.locator("tbody tr").nth(roundsBefore).waitFor();
+});
+
+When("round {int} is attempted:", async function (this: E2EWorld, _roundNumber: number, table: DataTable) {
+  await fillRound(this.page, table);
+});
+
+When("round {int} is edited to:", async function (this: E2EWorld, roundNumber: number, table: DataTable) {
+  await this.page.getByRole("button", { name: `Edit round ${roundNumber}` }).click();
+  for (const row of table.hashes()) {
+    await this.page.getByLabel(row.player).fill(row.tiles);
+  }
+  await this.page.getByRole("button", { name: "Save round" }).click();
+  // Same modal-close race as "round N is played" above (Game.tsx's onSaved closes the modal
+  // before awaiting the refresh GET), so wait for the Save button itself to disappear.
+  await expect(this.page.getByRole("button", { name: "Save round" })).toBeHidden();
+});
+
+Then("round {int} should be editable", async function (this: E2EWorld, roundNumber: number) {
+  await expect(this.page.getByRole("button", { name: `Edit round ${roundNumber}` })).toBeVisible();
+});
+
+Then("round {int} should not be editable", async function (this: E2EWorld, roundNumber: number) {
+  await expect(this.page.getByRole("button", { name: `Edit round ${roundNumber}` })).toHaveCount(0);
+});
+
+Then("the round should be rejected", async function (this: E2EWorld) {
+  await expect(this.page.getByRole("button", { name: "Save round" })).toBeDisabled();
+});
+
+Then("the Add Round modal should show the hint {string}", async function (this: E2EWorld, hint: string) {
+  await expect(this.page.getByText(hint)).toBeVisible();
 });
 
 When(
@@ -76,6 +111,11 @@ Then("they should be redirected to sign in", async function (this: E2EWorld) {
 
 When("I try to create a game with players:", async function (this: E2EWorld, table: DataTable) {
   const names = table.rows().flat();
+  this.page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/games/new") {
+      this.gamesCreated++;
+    }
+  });
   await this.page.goto("/");
   await this.page.getByLabel("Game name").fill("Cucumber e2e duplicate-name game");
   for (let i = 2; i < names.length; i++) {
@@ -95,4 +135,8 @@ Then("I should see the error {string}", async function (this: E2EWorld, message:
 
 Then("I should still be on the create-game form", async function (this: E2EWorld) {
   assert.equal(new URL(this.page.url()).pathname, "/");
+});
+
+Then("no game should have been created", function (this: E2EWorld) {
+  assert.equal(this.gamesCreated, 0);
 });

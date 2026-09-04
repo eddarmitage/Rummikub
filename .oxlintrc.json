@@ -1,0 +1,44 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "react"
+  ],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {},
+  "overrides": [
+    {
+      "files": ["src/frontend/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            {
+              "group": ["**/worker/**"],
+              "message": "src/frontend must not import from src/worker; move shared code to src/shared instead."
+            }
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/worker/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            {
+              "group": ["**/frontend/**"],
+              "message": "src/worker must not import from src/frontend; move shared code to src/shared instead."
+            }
+          ]
+        }]
+      }
+    }
+  ],
+  "env": {
+    "builtin": true
+  }
+}

@@ -1,6 +1,6 @@
 import { After, Before } from "@cucumber/cucumber";
 import { cleanup } from "@testing-library/react";
-import { isDuplicatePlayerName } from "../../../src/worker/lib/players";
+import { isDuplicatePlayerName } from "../../../src/shared/lib/players";
 import { computeRoundScores } from "../../../src/worker/lib/scoring";
 import { fakeLocation } from "./dom-setup";
 import type { ComponentWorld } from "./world";
@@ -49,6 +49,7 @@ async function handleFakeRequest(world: ComponentWorld, path: string, method: st
   }
 
   if (path === "/api/games/new" && method === "POST") {
+    world.gamesCreated++;
     return jsonResponse(
       { game: { id: world.gameId, name: "Cucumber component game", status: "active", createdAt: new Date().toISOString(), createdBy: null } },
       201,
@@ -88,6 +89,22 @@ async function handleFakeRequest(world: ComponentWorld, path: string, method: st
     };
     world.rounds.push(round);
     return jsonResponse({ round }, 201);
+  }
+
+  const roundMatch = path.match(/^\/api\/games\/([^/]+)\/rounds\/([^/]+)$/);
+  if (roundMatch && method === "PATCH") {
+    const [, , roundId] = roundMatch;
+    const round = world.rounds.find((r) => r.id === roundId);
+    if (!round) throw new Error(`Unhandled fake request: unknown round ${roundId}`);
+    const { scores } = JSON.parse(String(rawBody)) as { scores: { playerId: string; tiles: string[] }[] };
+    const scoresByPlayer = computeRoundScores(scores);
+    round.scores = scores.map((s) => ({
+      roundId,
+      playerId: s.playerId,
+      tiles: s.tiles,
+      roundScore: scoresByPlayer[s.playerId],
+    }));
+    return jsonResponse({ scores: round.scores });
   }
 
   throw new Error(`Unhandled fake request: ${method} ${path}`);

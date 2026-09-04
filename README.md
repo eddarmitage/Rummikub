@@ -52,11 +52,12 @@ will recreate the database and regenerate config from scratch.
 
 Other commands:
 
-| Command              | Does                                                                                |
+| Command              | Does                                                                               |
 | -------------------- | ---------------------------------------------------------------------------------- |
 | `npm run build`      | Builds the frontend into `dist/client`                                             |
 | `npm run deploy`     | Builds and deploys the Worker via `wrangler deploy`                                |
 | `npm run typecheck`  | Type-checks the frontend, worker, and all test suites                              |
+| `npm run lint`       | Lints the repo with oxlint                                                         |
 | `npm run test`       | Runs unit, integration (real `workerd` + local D1), and component tests (Vitest)   |
 | `npm run test:watch` | Same as `npm run test`, in watch mode                                              |
 | `npm run test:e2e`   | Runs the Playwright suite against a throwaway `wrangler dev` (`wrangler.e2e.toml`) |
@@ -194,7 +195,7 @@ new auth code.
 ## Deployment
 
 GitHub Actions builds, tests, applies D1 migrations, and deploys the Worker on every push to `main`.
-There's no staging environment — the CI pipeline (type checks, tests, branch protection) is the
+There's no staging environment — the CI pipeline (type checks, lint, tests, branch protection) is the
 safety net instead of a parallel deploy target.
 
 **Custom domain (optional):** by default the Worker deploys to its `*.workers.dev` subdomain. To
