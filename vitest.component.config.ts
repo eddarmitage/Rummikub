@@ -12,7 +12,9 @@ export default defineConfig({
   plugins: [react()],
   test: {
     name: "component",
-    include: ["tests/component/**/*.test.tsx"],
+    // `.ts` as well as `.tsx`: this is the project's only jsdom-backed Vitest suite, so
+    // DOM-touching frontend lib tests live here too, not just component tests.
+    include: ["tests/component/**/*.test.ts", "tests/component/**/*.test.tsx"],
     environment: "jsdom",
     setupFiles: ["./tests/component/setup.ts"],
     passWithNoTests: true,

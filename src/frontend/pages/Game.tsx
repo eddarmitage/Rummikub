@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { EnterRound } from "./EnterRound";
 import { apiGet, ApiRequestError } from "../lib/api";
 import { fetchAuthEnabled, signIn } from "../lib/auth";
+import { copyText } from "../lib/clipboard";
 import { sortTiles } from "../lib/tiles";
 import type { GameDetail, Round } from "../lib/types";
 
@@ -33,6 +34,8 @@ export function Game({ gameId }: { gameId: string }) {
   const [showAddRound, setShowAddRound] = useState(false);
   const [editingRound, setEditingRound] = useState<Round | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  // Set only when every copy path failed, so the link can still be selected by hand.
+  const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
   // `null` until the probe resolves — the button renders only on a definite `true`, so a
   // no-auth instance never flashes a "Sign in" that then disappears.
   const [authEnabled, setAuthEnabled] = useState<boolean | null>(null);
@@ -69,14 +72,19 @@ export function Game({ gameId }: { gameId: string }) {
   }, []);
 
   async function handleShare() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
+    const url = window.location.href;
+
+    if (await copyText(url)) {
+      setShareFallbackUrl(null);
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
-    } catch {
-      // Clipboard access can fail (permissions, insecure context) — the URL is still visible
-      // in the address bar, so there's nothing more useful to do than silently no-op.
+      return;
     }
+
+    // Nothing could reach the clipboard (see copyText's note on insecure contexts). Show the
+    // URL so it can be selected or long-pressed instead of the button appearing to do nothing
+    // — "it's in the address bar" isn't much help on a phone, where it's usually collapsed.
+    setShareFallbackUrl(url);
   }
 
   if (error) {
@@ -194,6 +202,13 @@ export function Game({ gameId }: { gameId: string }) {
             </button>
           )}
         </div>
+
+        {shareFallbackUrl && (
+          <p className="share-fallback">
+            Couldn't copy automatically — select this link to share it:{" "}
+            <span className="share-fallback-url">{shareFallbackUrl}</span>
+          </p>
+        )}
       </div>
 
       {(showAddRound || editingRound) && (

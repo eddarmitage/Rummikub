@@ -189,6 +189,19 @@ body {
   flex: 1;
 }
 
+.share-fallback {
+  margin-top: 12px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.share-fallback-url {
+  /* `all` so the URL wraps mid-string on a narrow phone rather than overflowing the card. */
+  word-break: break-all;
+  user-select: all;
+  color: var(--color-text);
+}
+
 .icon-button {
   background: none;
   border: none;
